@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Virtus Official Page",
+  title: "Bang Moon Page",
   description: "Streamer & Content Creator",
 };
 
