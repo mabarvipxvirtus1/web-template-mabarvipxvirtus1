@@ -66,36 +66,53 @@ export async function GET() {
     });
 
     if (!profile) {
-      profile = await prisma.linktreeProfile.create({
-        data: {
-          id: 'profile',
-          name: 'Virtus Official',
-          bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
-          avatarUrl: '/logo.png',
-          avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
-          theme: 'ocean',
-          socialHeaderTitle: 'Social Media Handles',
-          showLiveBanner: true,
-          liveBannerTitle: 'Cupidut & Dudud Lovers',
-          liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
-          liveBannerUrl: '/fanbase-cupidut-dudud',
-          liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-          siteTitle: 'Virtus Official',
-          siteSubtitle: 'Streamer TIDAK KIKIR',
-          footerDesc: 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
-          links: { create: DEFAULT_LINKS },
-          banners: { create: DEFAULT_BANNERS },
-          topButtons: { create: DEFAULT_TOP_BUTTONS },
-          codes: { create: DEFAULT_CODES },
-        },
-        include: {
-          links: { orderBy: { orderIndex: 'asc' } },
-          banners: { orderBy: { orderIndex: 'asc' } },
-          topButtons: { orderBy: { orderIndex: 'asc' } },
-          codes: { orderBy: { orderIndex: 'asc' } },
-          videoAds: { orderBy: { orderIndex: 'asc' } },
-        },
-      });
+      try {
+        profile = await prisma.linktreeProfile.create({
+          data: {
+            id: 'profile',
+            name: 'Virtus Official',
+            bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
+            avatarUrl: '/logo.png',
+            avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
+            theme: 'ocean',
+            socialHeaderTitle: 'Social Media Handles',
+            showLiveBanner: true,
+            liveBannerTitle: 'Cupidut & Dudud Lovers',
+            liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
+            liveBannerUrl: '/fanbase-cupidut-dudud',
+            liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
+            siteTitle: 'Virtus Official',
+            siteSubtitle: 'Streamer TIDAK KIKIR',
+            footerDesc: 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+            links: { create: DEFAULT_LINKS },
+            banners: { create: DEFAULT_BANNERS },
+            topButtons: { create: DEFAULT_TOP_BUTTONS },
+            codes: { create: DEFAULT_CODES },
+          },
+          include: {
+            links: { orderBy: { orderIndex: 'asc' } },
+            banners: { orderBy: { orderIndex: 'asc' } },
+            topButtons: { orderBy: { orderIndex: 'asc' } },
+            codes: { orderBy: { orderIndex: 'asc' } },
+            videoAds: { orderBy: { orderIndex: 'asc' } },
+          },
+        });
+      } catch (createError: any) {
+        if (createError?.code === 'P2002') {
+          profile = await prisma.linktreeProfile.findUnique({
+            where: { id: 'profile' },
+            include: {
+              links: { orderBy: { orderIndex: 'asc' } },
+              banners: { orderBy: { orderIndex: 'asc' } },
+              topButtons: { orderBy: { orderIndex: 'asc' } },
+              codes: { orderBy: { orderIndex: 'asc' } },
+              videoAds: { orderBy: { orderIndex: 'asc' } },
+            },
+          });
+        } else {
+          throw createError;
+        }
+      }
     } else {
       let needsRefresh = false;
       if (!profile.codes || profile.codes.length === 0) {
