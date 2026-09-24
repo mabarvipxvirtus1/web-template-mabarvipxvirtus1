@@ -24,11 +24,11 @@ interface FooterProps {
 
 export default function Footer({ initialData }: FooterProps = {}) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialData?.links || []);
-  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
+  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Bang Moon");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
   const [footerDesc, setFooterDesc] = useState(
     initialData?.footerDesc ||
-    "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami."
+    "Platform resmi Bang Moon. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami."
   );
 
   const [isLoaded, setIsLoaded] = useState(!!initialData);
@@ -145,11 +145,11 @@ export default function Footer({ initialData }: FooterProps = {}) {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Virtus Official. Hak cipta dilindungi.</p>
+          <p>&copy; {new Date().getFullYear()} Bang Moon. Hak cipta dilindungi.</p>
           <div className="flex items-center gap-1">
             <span>Dibuat dengan</span>
             <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" />
-            <span>untuk Komunitas Virtus</span>
+            <span>untuk Komunitas Bang Moon</span>
           </div>
         </div>
       </div>

@@ -25,7 +25,7 @@ export default async function HomePage() {
     // Return fallback profile until initialized via GET route or admin
     profile = {
       id: 'profile',
-      name: 'Virtus Official',
+      name: 'Bang Moon',
       bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
       avatarUrl: '/logo.png',
       avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
@@ -35,12 +35,12 @@ export default async function HomePage() {
       categoryTextColor: '',
       showLiveBanner: true,
       liveBannerTitle: 'Cupidut & Dudud Lovers',
-      liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
+      liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Bang Moon',
       liveBannerUrl: '/fanbase-cupidut-dudud',
       liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-      siteTitle: 'Virtus Official',
+      siteTitle: 'Bang Moon',
       siteSubtitle: 'Streamer TIDAK KIKIR',
-      footerDesc: 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+      footerDesc: 'Platform resmi Bang Moon. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
       updatedAt: new Date(),
       links: [
         { id: '1', title: 'Tiktok', url: 'https://tiktok.com/@onlyvirtus', icon: 'tiktok', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'social', sectionTitle: '', sectionBgColor: '', sectionTextColor: '', waCustomMessage: '', isEnabled: true, orderIndex: 0, profileId: 'profile', createdAt: new Date(), updatedAt: new Date() },

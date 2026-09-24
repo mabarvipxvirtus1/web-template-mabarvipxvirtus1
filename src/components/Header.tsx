@@ -20,7 +20,7 @@ export default function Header({ initialData }: HeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
+  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Bang Moon");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
 
   // Auto-detect live status (auto TikTok detector) & site branding settings
