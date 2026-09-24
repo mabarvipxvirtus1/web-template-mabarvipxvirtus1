@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     // Upload ke Supabase dengan filename tetap + upsert: true (overwrite)
     const { error } = await supabase.storage
-      .from('assets')
+      .from('mabarvipxvirtus1')
       .upload(filename, buffer, {
         contentType,
         upsert: true,
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     // Ambil public URL dengan cache-busting timestamp
     const { data: publicUrlData } = supabase.storage
-      .from('assets')
+      .from('mabarvipxvirtus1')
       .getPublicUrl(filename);
 
     const urlWithCacheBust = `${publicUrlData.publicUrl}?v=${Date.now()}`;

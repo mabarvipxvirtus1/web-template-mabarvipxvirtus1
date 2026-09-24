@@ -330,7 +330,7 @@ export default function EditLinktreePage() {
   };
 
   const deleteUploadedFile = async (url?: string) => {
-    if (!url || !url.includes('/storage/v1/object/public/assets/')) return;
+    if (!url || (!url.includes('/storage/v1/object/public/mabarvipxvirtus1/') && !url.includes('/storage/v1/object/public/assets/'))) return;
     try {
       await fetch('/api/upload', {
         method: 'DELETE',

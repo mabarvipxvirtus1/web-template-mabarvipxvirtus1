@@ -12,9 +12,9 @@ function extractFilenameFromUrl(url: string): string | null {
   if (!url || typeof url !== 'string') return null;
   try {
     const urlObj = new URL(url);
-    // Standard Supabase public storage URL: .../storage/v1/object/public/assets/filename
+    // Standard Supabase public storage URL: .../storage/v1/object/public/mabarvipxvirtus1/filename
     const pathnameParts = urlObj.pathname.split('/');
-    if (urlObj.pathname.includes('/storage/v1/object/public/assets/')) {
+    if (urlObj.pathname.includes('/storage/v1/object/public/mabarvipxvirtus1/') || urlObj.pathname.includes('/storage/v1/object/public/assets/')) {
       const filename = pathnameParts[pathnameParts.length - 1];
       return filename ? decodeURIComponent(filename) : null;
     }
@@ -34,12 +34,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Auto-delete old file if oldUrl is provided and points to Supabase assets bucket
+    // Auto-delete old file if oldUrl is provided and points to Supabase mabarvipxvirtus1 bucket
     if (oldUrl) {
       const oldFilename = extractFilenameFromUrl(oldUrl);
       if (oldFilename) {
         supabase.storage
-          .from('assets')
+          .from('mabarvipxvirtus1')
           .remove([oldFilename])
           .then(({ error }) => {
             if (error) console.error('Failed to auto-delete old file from Supabase:', error);
@@ -56,9 +56,9 @@ export async function POST(request: Request) {
     const filename = `upload-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
     const contentType = file.type || 'image/jpeg';
 
-    // Upload file directly to Supabase Storage bucket 'assets'
+    // Upload file directly to Supabase Storage bucket 'mabarvipxvirtus1'
     const { data, error } = await supabase.storage
-      .from('assets')
+      .from('mabarvipxvirtus1')
       .upload(filename, buffer, {
         contentType,
         upsert: true,
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     // Generate public URL
     const { data: publicUrlData } = supabase.storage
-      .from('assets')
+      .from('mabarvipxvirtus1')
       .getPublicUrl(filename);
 
     return NextResponse.json({ url: publicUrlData.publicUrl });
@@ -94,7 +94,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabase.storage
-      .from('assets')
+      .from('mabarvipxvirtus1')
       .remove([filename]);
 
     if (error) {
