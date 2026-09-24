@@ -10,6 +10,8 @@ interface HeaderProps {
   initialData?: {
     siteTitle?: string;
     siteSubtitle?: string;
+    siteLogoUrl?: string;
+    faviconUrl?: string;
   };
 }
 

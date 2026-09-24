@@ -116,6 +116,7 @@ interface ProfileData {
   siteTitle?: string;
   siteSubtitle?: string;
   siteLogoUrl?: string;
+  faviconUrl?: string;
   footerDesc?: string;
   showLeaderboard?: boolean;
   leaderboardTitle?: string;

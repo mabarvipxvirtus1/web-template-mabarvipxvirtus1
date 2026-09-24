@@ -17,6 +17,7 @@ interface FooterProps {
   initialData?: {
     siteTitle?: string;
     siteSubtitle?: string;
+    siteLogoUrl?: string;
     footerDesc?: string;
     links?: SocialLink[];
   };
