@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { SociabuzzLeaderboard } from '@/components/SociabuzzLeaderboard';
 import { ChromaVideoAd } from '@/components/ChromaVideoAd';
+import { BackgroundEffects } from '@/components/BackgroundEffects';
 import {
   Globe,
   MessageCircle,
@@ -42,6 +43,14 @@ export interface LinktreeItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
+  animation?: 'none' | 'shake' | 'bounce' | 'pulse' | 'glow' | 'shake-bounce' | 'bell-shake' | string;
+  animationSpeed?: 'slow' | 'normal' | 'fast' | string;
+  animationStrength?: number;
+  animationCount?: number;
+  bgImageUrl?: string;
+  bgOpacity?: number;
+  textShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
+  iconShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -127,6 +136,11 @@ export interface LinktreeProfileData {
   socialIconBg?: string;
   socialIconCustomBg?: string;
   socialIconShape?: string;
+  bgImageUrl?: string;
+  bgDarkness?: number;
+  bgBlur?: number;
+  bgEffect?: string;
+  bgEffectSpeed?: string;
   videoAds?: any[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
@@ -703,26 +717,39 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           siteSubtitle: profile.siteSubtitle,
         }}
       />
-      <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${currentTheme.bg} font-sans relative overflow-hidden`}>
-        {/* Background Animated Blobs / Glow */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' as const }}
-          className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+      <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${profile.bgImageUrl ? 'bg-slate-950' : currentTheme.bg} font-sans relative overflow-hidden`}>
+        {/* Custom Background Image & Ultra-fast Visual Effects Layer */}
+        <BackgroundEffects
+          bgImageUrl={profile.bgImageUrl}
+          bgDarkness={profile.bgDarkness ?? 40}
+          bgBlur={profile.bgBlur ?? 0}
+          bgEffect={profile.bgEffect || 'none'}
+          bgEffectSpeed={profile.bgEffectSpeed || 'normal'}
         />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
-            rotate: [0, -90, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' as const }}
-          className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
-        />
+
+        {/* Background Animated Blobs / Glow (Fallback if no custom image & effect) */}
+        {!profile.bgImageUrl && profile.bgEffect === 'none' && (
+          <>
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.5, 0.3],
+                rotate: [0, 90, 0],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' as const }}
+              className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.3, 1],
+                opacity: [0.2, 0.4, 0.2],
+                rotate: [0, -90, 0],
+              }}
+              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' as const }}
+              className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
+            />
+          </>
+        )}
 
         {/* Main Container Card */}
         <div className="w-full max-w-md my-auto relative z-10 py-6">
@@ -945,6 +972,126 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                   targetUrl = `${targetUrl}${separator}text=${encodeURIComponent(link.waCustomMessage.trim())}`;
                 }
 
+                // Calculate animation properties
+                const animType = link.animation || 'none';
+                const animSpeed = link.animationSpeed || 'normal';
+                const animStrength = typeof link.animationStrength === 'number' ? link.animationStrength : 5;
+                const factor = animStrength / 5; // 1 is default (factor=1)
+
+                // Base duration in seconds for loop cycle
+                let cycleDuration = 3;
+                if (animSpeed === 'fast') cycleDuration = 1.8;
+                if (animSpeed === 'slow') cycleDuration = 4.5;
+
+                let linkAnimateProps: any = undefined;
+                let linkTransitionProps: any = undefined;
+
+                if (animType === 'shake') {
+                  const xDist = Math.round(5 * factor);
+                  linkAnimateProps = {
+                    x: [0, -xDist, xDist, -xDist, xDist, 0, 0],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'bounce') {
+                  const yDist = Math.round(8 * factor);
+                  linkAnimateProps = {
+                    y: [0, -yDist, 0, Math.round(-yDist * 0.4), 0, 0],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.15, 0.3, 0.45, 0.6, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'shake-bounce' || animType === 'bell-shake') {
+                  // Authentic Bell Swing Pendulum Physics
+                  // NOTE: transformOrigin MUST be set via CSS style, NOT inside animate prop (framer-motion ignores it there)
+                  const count = typeof link.animationCount === 'number' && link.animationCount > 0 ? link.animationCount : 3;
+                  const maxDeg = Math.max(3, Math.round(7 * factor));
+
+                  const rotateArray: number[] = [0];
+                  const timesArray: number[] = [0];
+
+                  // 60% of the cycle: active swings, 40%: rest at 0
+                  const activeShare = 0.6;
+                  const swings = count * 2; // back-and-forth
+                  const swingTime = activeShare / swings;
+
+                  for (let i = 1; i <= swings; i++) {
+                    const damp = Math.pow(0.75, i - 1); // natural air-resistance damping
+                    const direction = i % 2 === 1 ? -1 : 1;
+                    const angle = Number((direction * maxDeg * damp).toFixed(2));
+                    rotateArray.push(angle);
+                    timesArray.push(Number((i * swingTime).toFixed(3)));
+                  }
+
+                  // Land back at 0 cleanly
+                  rotateArray.push(0, 0);
+                  timesArray.push(Number((activeShare + 0.08).toFixed(3)), 1);
+
+                  // Only rotate goes in animate; transformOrigin is set via style prop on the element
+                  linkAnimateProps = {
+                    rotate: rotateArray,
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: timesArray,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'pulse') {
+                  const scaleVal = 1 + 0.04 * factor;
+                  linkAnimateProps = {
+                    scale: [1, scaleVal, 1, scaleVal, 1, 1],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.15, 0.3, 0.45, 0.6, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'glow') {
+                  linkAnimateProps = {
+                    boxShadow: [
+                      '0 0 0px rgba(56, 189, 248, 0)',
+                      `0 0 ${Math.round(15 * factor)}px rgba(56, 189, 248, 0.8)`,
+                      '0 0 0px rgba(56, 189, 248, 0)',
+                    ],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                }
+
+                // Shadow CSS generator
+                const getTextShadowStyle = (shadowType?: string) => {
+                  if (shadowType === 'subtle') return 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))';
+                  if (shadowType === 'medium') return 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85)) drop-shadow(0 1px 2px rgba(0,0,0,0.5))';
+                  if (shadowType === 'heavy') return 'drop-shadow(0 3px 6px rgba(0, 0, 0, 1)) drop-shadow(0 0 8px rgba(0, 0, 0, 0.9))';
+                  if (shadowType === 'glow') return 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 12px rgba(168, 85, 247, 0.6))';
+                  return undefined;
+                };
+
+                const getIconShadowStyle = (shadowType?: string) => {
+                  if (shadowType === 'subtle') return 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))';
+                  if (shadowType === 'medium') return 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8))';
+                  if (shadowType === 'heavy') return 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 6px rgba(0,0,0,0.8))';
+                  if (shadowType === 'glow') return 'drop-shadow(0 0 10px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 15px rgba(236, 72, 153, 0.7))';
+                  return undefined;
+                };
+
+                const textShadowCss = getTextShadowStyle(link.textShadow);
+                const iconShadowCss = getIconShadowStyle(link.iconShadow);
+
+                const cardOpacity = typeof link.bgOpacity === 'number' ? link.bgOpacity / 100 : 1;
+
                 return (
                   <div key={link.id} className="w-full space-y-3.5">
                     {showHeader && headerText && (
@@ -969,16 +1116,45 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         target={targetUrl.startsWith('http') ? '_blank' : '_self'}
                         rel="noopener noreferrer"
                         variants={itemVariants}
+                        animate={linkAnimateProps}
+                        transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md ${currentTheme.cardBg}`}
+                        style={(animType === 'bell-shake' || animType === 'shake-bounce') ? { transformOrigin: 'top center' } : undefined}
+                        className="w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md overflow-hidden"
                       >
-                        {renderLinkIcon(link)}
-                        <AutoScrollText
-                          text={link.title}
-                          className="tracking-wide text-base font-bold text-center"
-                        />
-                        <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity">
+                        {/* Background Base Container with Opacity */}
+                        <div
+                          style={{ opacity: cardOpacity }}
+                          className={`absolute inset-0 z-0 transition-opacity duration-300 ${
+                            link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg
+                          }`}
+                        >
+                          {link.bgImageUrl && (
+                            <div className="absolute inset-0">
+                              <img
+                                src={link.bgImageUrl}
+                                alt=""
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="relative z-10 flex flex-col items-center justify-center w-full gap-2.5">
+                          <div style={{ filter: iconShadowCss }}>
+                            {renderLinkIcon(link)}
+                          </div>
+                          <div style={{ filter: textShadowCss }} className="w-full">
+                            <AutoScrollText
+                              text={link.title}
+                              className="tracking-wide text-base font-bold text-center"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity z-10">
                           <MoreHorizontal className="w-4 h-4" />
                         </div>
                       </motion.a>
@@ -988,37 +1164,67 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         target={targetUrl.startsWith('http') ? '_blank' : '_self'}
                         rel="noopener noreferrer"
                         variants={itemVariants}
+                        animate={linkAnimateProps}
+                        transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md ${
+                        style={(animType === 'bell-shake' || animType === 'shake-bounce') ? { transformOrigin: 'top center' } : undefined}
+                        className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md overflow-hidden ${
                           link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
-                        } ${currentTheme.cardBg}`}
+                        }`}
                       >
+                        {/* Background Base Container with Opacity */}
+                        <div
+                          style={{ opacity: cardOpacity }}
+                          className={`absolute inset-0 z-0 transition-opacity duration-300 ${
+                            link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg
+                          }`}
+                        >
+                          {link.bgImageUrl && (
+                            <div className="absolute inset-0">
+                              <img
+                                src={link.bgImageUrl}
+                                alt=""
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
+                            </div>
+                          )}
+                        </div>
+
                         {link.itemAlign === 'center' ? (
                           <>
-                            <div className="flex items-center gap-3.5 max-w-[85%] min-w-0 flex-1">
-                              {renderLinkIcon(link)}
-                              <AutoScrollText
-                                text={link.title}
-                                className={`tracking-wide font-medium ${
-                                  link.textAlign === 'center' ? 'text-center' : 'text-left'
-                                }`}
-                              />
+                            <div className="relative z-10 flex items-center gap-3.5 max-w-[85%] min-w-0 flex-1">
+                              <div style={{ filter: iconShadowCss }}>
+                                {renderLinkIcon(link)}
+                              </div>
+                              <div style={{ filter: textShadowCss }} className="min-w-0 flex-1">
+                                <AutoScrollText
+                                  text={link.title}
+                                  className={`tracking-wide font-medium ${
+                                    link.textAlign === 'center' ? 'text-center' : 'text-left'
+                                  }`}
+                                />
+                              </div>
                             </div>
-                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6 shrink-0" />
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6 shrink-0 z-10" />
                           </>
                         ) : (
                           <>
-                            <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
-                              {renderLinkIcon(link)}
-                              <AutoScrollText
-                                text={link.title}
-                                className={`tracking-wide font-medium ${
-                                  link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'
-                                }`}
-                              />
+                            <div className="relative z-10 flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+                              <div style={{ filter: iconShadowCss }}>
+                                {renderLinkIcon(link)}
+                              </div>
+                              <div style={{ filter: textShadowCss }} className="min-w-0 flex-1">
+                                <AutoScrollText
+                                  text={link.title}
+                                  className={`tracking-wide font-medium ${
+                                    link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'
+                                  }`}
+                                />
+                              </div>
                             </div>
-                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0 z-10" />
                           </>
                         )}
                       </motion.a>
@@ -1110,7 +1316,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               <p className="flex items-center justify-center gap-1 font-medium">
                 <span>Powered by</span>
                 <Link href="/mabarvip" prefetch={true} className="underline hover:text-cyan-300 transition-colors">
-                  Virtus Official
+                  Microboy
                 </Link>
               </p>
             </motion.div>

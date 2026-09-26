@@ -51,6 +51,14 @@ interface LinkItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
+  animation?: "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce" | "bell-shake" | string;
+  animationSpeed?: "slow" | "normal" | "fast" | string;
+  animationStrength?: number;
+  animationCount?: number;
+  bgImageUrl?: string;
+  bgOpacity?: number;
+  textShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
+  iconShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -149,6 +157,11 @@ interface ProfileData {
   socialIconBg?: string;
   socialIconCustomBg?: string;
   socialIconShape?: string;
+  bgImageUrl?: string;
+  bgDarkness?: number;
+  bgBlur?: number;
+  bgEffect?: string;
+  bgEffectSpeed?: string;
   videoAds?: VideoAdItem[];
   links: LinkItem[];
   banners: BannerItem[];
@@ -197,8 +210,8 @@ export default function EditLinktreePage() {
 
   const [profile, setProfile] = useState<ProfileData>({
     id: "profile",
-    name: "Bang Moon",
-    bio: "Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥",
+    name: "Microboy",
+    bio: "Streamer & Gaming Content Creator 🔥",
     avatarUrl: "/logo.png",
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     theme: "ocean",
@@ -207,13 +220,13 @@ export default function EditLinktreePage() {
     categoryTextColor: "",
     showLiveBanner: true,
     liveBannerTitle: "Cupidut & Dudud Lovers",
-    liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Bang Moon",
+    liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Microboy",
     liveBannerUrl: "/fanbase-cupidut-dudud",
     liveBannerImage: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
-    siteTitle: "Bang Moon",
-    siteSubtitle: "Streamer TIDAK KIKIR",
+    siteTitle: "Microboy",
+    siteSubtitle: "Official Streamer",
     siteLogoUrl: "",
-    footerDesc: "Platform resmi Bang Moon. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
+    footerDesc: "Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
     showLeaderboard: true,
     leaderboardTitle: "TOP SUPPORTERS BULAN INI",
     sociabuzzTribeId: "8913094574",
@@ -244,9 +257,25 @@ export default function EditLinktreePage() {
     socialIconColor: "",
     socialIconUseBrandColor: false,
     socialIconBg: "glass",
-    socialIconCustomBg: "",
-    socialIconShape: "circle",
-    videoAds: [],
+    bgImageUrl: "",
+    bgDarkness: 40,
+    bgBlur: 0,
+    bgEffect: "none",
+    bgEffectSpeed: "normal",
+    videoAds: [
+      {
+        id: "default-1",
+        title: "Iklan Video 1",
+        videoUrl: "",
+        targetUrl: "",
+        chromaEnable: true,
+        chromaColor: "#00FF00",
+        chromaSimilarity: 0.35,
+        chromaSmoothness: 0.1,
+        isEnabled: true,
+        orderIndex: 0,
+      },
+    ],
     links: [],
     banners: [],
     topButtons: [],
@@ -330,7 +359,7 @@ export default function EditLinktreePage() {
   };
 
   const deleteUploadedFile = async (url?: string) => {
-    if (!url || (!url.includes('/storage/v1/object/public/mabarvipxvirtus1/') && !url.includes('/storage/v1/object/public/assets/'))) return;
+    if (!url || !url.includes('/storage/v1/object/public/assets/')) return;
     try {
       await fetch('/api/upload', {
         method: 'DELETE',
@@ -342,7 +371,7 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl") => {
     setUploadingField(field);
     try {
       const compressedBlob = await compressImage(file, 800, 800, 0.85);
@@ -528,6 +557,22 @@ export default function EditLinktreePage() {
         const res = await fetch("/api/linktree");
         if (res.ok) {
           const data = await res.json();
+          if (!data.videoAds || data.videoAds.length === 0) {
+            data.videoAds = [
+              {
+                id: `default-${Date.now()}`,
+                title: "Iklan Video 1",
+                videoUrl: data.videoAdUrl || "",
+                targetUrl: data.videoAdTargetUrl || "",
+                chromaEnable: data.videoAdChromaEnable ?? true,
+                chromaColor: data.videoAdChromaColor || "#00FF00",
+                chromaSimilarity: data.videoAdChromaSimilarity ?? 0.35,
+                chromaSmoothness: data.videoAdChromaSmoothness ?? 0.1,
+                isEnabled: true,
+                orderIndex: 0,
+              },
+            ];
+          }
           setProfile(data);
         }
       } catch (err) {
@@ -602,6 +647,42 @@ export default function EditLinktreePage() {
     } catch (err: any) {
       console.error("Upload error:", err);
       alert(`Terjadi kesalahan saat mengunggah icon: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handleLinkCardBgUpload = async (file: File, index: number) => {
+    setUploadingField(`link-cardbg-${index}`);
+    try {
+      const compressedBlob = await compressImage(file, 1200, 400, 0.85);
+      const formData = new FormData();
+      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
+      if (profile.links?.[index]?.bgImageUrl) {
+        formData.append("oldUrl", profile.links[index].bgImageUrl);
+      }
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        const updatedLinks = [...profile.links];
+        updatedLinks[index] = {
+          ...updatedLinks[index],
+          bgImageUrl: data.url,
+        };
+        setProfile({ ...profile, links: updatedLinks });
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah background banner: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah background banner: ${err?.message || err}`);
     } finally {
       setUploadingField(null);
     }
@@ -885,10 +966,10 @@ export default function EditLinktreePage() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header & Footer</label>
                   <input
                     type="text"
-                    value={profile.siteTitle || "Virtus Official"}
+                    value={profile.siteTitle || "Microboy"}
                     onChange={(e) => setProfile({ ...profile, siteTitle: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Contoh: Virtus Official"
+                    placeholder="Contoh: Microboy"
                   />
                 </div>
 
@@ -896,10 +977,10 @@ export default function EditLinktreePage() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Sub-judul / Tagline Website</label>
                   <input
                     type="text"
-                    value={profile.siteSubtitle || "Streamer TIDAK KIKIR"}
+                    value={profile.siteSubtitle || "Official Streamer"}
                     onChange={(e) => setProfile({ ...profile, siteSubtitle: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Contoh: Streamer TIDAK KIKIR"
+                    placeholder="Contoh: Official Streamer"
                   />
                 </div>
               </div>
@@ -1750,7 +1831,170 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Virtus Official) */}
+            {/* Section 2: Custom Background & Visual Effects */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl">
+              <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-fuchsia-400" />
+                  <span>Custom Background Gambar & Efek Visual</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-mono border border-fuchsia-500/30 font-bold">
+                  SUPER FAST 60FPS
+                </span>
+              </h2>
+
+              <div className="space-y-6">
+                {/* 1. Custom Background Image URL / Upload */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    URL Gambar Background Sendiri (Atau Upload File Gambar)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={profile.bgImageUrl || ""}
+                      onChange={(e) => setProfile({ ...profile, bgImageUrl: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-purple-500 text-sm outline-none text-slate-100 font-mono"
+                      placeholder="https://images.unsplash.com/... atau kosongkan untuk warna tema"
+                    />
+                    <label className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                      {uploadingField === "bgImageUrl" ? (
+                        <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 text-purple-400" />
+                      )}
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "bgImageUrl");
+                        }}
+                      />
+                    </label>
+                    {profile.bgImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteUploadedFile(profile.bgImageUrl || "");
+                          setProfile({ ...profile, bgImageUrl: "" });
+                        }}
+                        className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Hapus Background"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Upload gambar kustom Anda (JPG/PNG/WebP/GIF) atau masukkan URL gambar dari internet.
+                  </p>
+                </div>
+
+                {/* 2. Darkness Dimmer & Blur Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  {/* Darkness Slider */}
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+                      <span>Tingkat Kegelapan Layer (Darkness)</span>
+                      <span className="text-purple-400 font-mono font-bold">{profile.bgDarkness ?? 40}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="90"
+                      step="5"
+                      value={profile.bgDarkness ?? 40}
+                      onChange={(e) => setProfile({ ...profile, bgDarkness: parseInt(e.target.value) })}
+                      className="w-full accent-purple-500"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Gelapkan gambar agar teks & tombol link di atasnya tetap jelas dibaca.
+                    </p>
+                  </div>
+
+                  {/* Blur Slider */}
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+                      <span>Tingkat Kelembutan Blur (Frosted Glass)</span>
+                      <span className="text-purple-400 font-mono font-bold">{profile.bgBlur ?? 0}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="1"
+                      value={profile.bgBlur ?? 0}
+                      onChange={(e) => setProfile({ ...profile, bgBlur: parseInt(e.target.value) })}
+                      className="w-full accent-purple-500"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Beri efek blur halus (0px = tajam / 20px = blur lembut).
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Pilihan Efek Animasi Background Visual */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 mb-2">Pilihan Efek Visual Latar Belakang (Ultra-Lightweight)</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[
+                      { id: "none", label: "🚫 Tanpa Efek", desc: "Polos tanpa animasi" },
+                      { id: "particles", label: "🌌 Bintang Melayang", desc: "Titik partikel cahaya neon melayang" },
+                      { id: "ambient-glow", label: "✨ Ambient Glow Pulse", desc: "Lingkaran cahaya neon berdenyut" },
+                      { id: "aurora", label: "💫 Aurora Motion", desc: "Gelombang warna aurora halus" },
+                      { id: "cyber-rain", label: "🌧️ Cyber Digital Rain", desc: "Hujan kode/cahaya digital" },
+                      { id: "cyber-grid", label: "⚡ Retro Cyber Grid", desc: "Garis-garis kisi cyber synthwave" },
+                    ].map((eff) => (
+                      <button
+                        key={eff.id}
+                        type="button"
+                        onClick={() => setProfile({ ...profile, bgEffect: eff.id })}
+                        className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                          (profile.bgEffect || "none") === eff.id
+                            ? "bg-purple-900/40 border-purple-500 text-white font-bold shadow-md ring-1 ring-purple-500/50"
+                            : "bg-slate-950/70 border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-slate-200"
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{eff.label}</div>
+                        <div className="text-[10px] text-slate-400 mt-1">{eff.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Kecepatan Animasi */}
+                {(profile.bgEffect && profile.bgEffect !== "none") && (
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">Kecepatan Animasi Efek</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "slow", label: "🐢 Lambat & Soft" },
+                        { id: "normal", label: "⚡ Normal (Recommended)" },
+                        { id: "fast", label: "🚀 Cepat & Dynamic" },
+                      ].map((sp) => (
+                        <button
+                          key={sp.id}
+                          type="button"
+                          onClick={() => setProfile({ ...profile, bgEffectSpeed: sp.id })}
+                          className={`py-2 px-2 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
+                            (profile.bgEffectSpeed || "normal") === sp.id
+                              ? "bg-purple-600 text-white border-purple-400 font-bold"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                          }`}
+                        >
+                          {sp.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Microboy) */}
             <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
@@ -1759,13 +2003,13 @@ export default function EditLinktreePage() {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                      <span>Icon Social Media Header (Bawah Judul Virtus Official)</span>
+                      <span>Icon Social Media Header (Bawah Judul Microboy)</span>
                       <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono border border-cyan-500/30">
                         Linktree Icon Bar
                       </span>
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Virtus Official dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
+                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Microboy dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
                     </p>
                   </div>
                 </div>
@@ -1791,7 +2035,7 @@ export default function EditLinktreePage() {
                     <label className="block text-xs font-bold text-slate-200 mb-2">Posisi Penempatan Icon Bar</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
-                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Virtus Official" },
+                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Microboy" },
                         { id: "above_links", label: "📋 Di Atas Links List", desc: "Di atas daftar link utama" },
                         { id: "disabled", label: "🚫 Sembunyikan Bar", desc: "Nonaktifkan icon bar header" },
                       ].map((pos) => (
@@ -1995,7 +2239,7 @@ export default function EditLinktreePage() {
                       </label>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Virtus Official:
+                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Microboy:
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -2510,11 +2754,11 @@ export default function EditLinktreePage() {
               )}
             </div>
 
-            {/* Section 2: Tema Visual */}
+            {/* Section 2.5: Tema Visual */}
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <Layout className="w-5 h-5 text-purple-400" />
-                <span>Pilih Tema Tampilan</span>
+                <span>Pilih Tema Warna Standar</span>
               </h2>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -2877,6 +3121,277 @@ export default function EditLinktreePage() {
                           <p className="text-[10px] text-slate-500">
                             Format perataan nama link
                           </p>
+                        </div>
+                      </div>
+
+                      {/* 4. Efek Animasi & Gerakan Tombol */}
+                      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                        <div className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-fuchsia-400" />
+                            <span>Efek Animasi & Gerakan Tombol</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-fuchsia-400 font-bold px-2 py-0.5 rounded bg-fuchsia-950/50 border border-fuchsia-800/40">
+                            {link.animation === "shake-bounce" ? "SHAKE + BOUNCE (LINETREE MICROBOY)" : (link.animation || "none").toUpperCase()}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                          {/* Jenis Animasi */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Jenis Animasi
+                            </label>
+                            <select
+                              value={link.animation || "none"}
+                              onChange={(e) => updateLink(idx, "animation", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-fuchsia-500"
+                            >
+                              <option value="none">🚫 Tanpa Animasi</option>
+                              <option value="bell-shake">🔔 Shake Lonceng (100% Mirip Microboy Linktree)</option>
+                              <option value="shake-bounce">🔥 Shake + Bounce Combo</option>
+                              <option value="shake">🫨 Shake (Getar Horisontal)</option>
+                              <option value="bounce">🏀 Bounce (Membal Vertikal)</option>
+                              <option value="pulse">💓 Pulse (Denyut Scale)</option>
+                              <option value="glow">✨ Glow (Cahaya Neon)</option>
+                            </select>
+                          </div>
+
+                          {/* Kecepatan / Seringnya Animasi */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Kecepatan / Seberapa Sering
+                            </label>
+                            <select
+                              disabled={!link.animation || link.animation === "none"}
+                              value={link.animationSpeed || "normal"}
+                              onChange={(e) => updateLink(idx, "animationSpeed", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-fuchsia-500 disabled:opacity-30"
+                            >
+                              <option value="slow">🐢 Lambat / Jarang (4.5s cycle)</option>
+                              <option value="normal">⚡ Normal / Sedang (3.0s cycle)</option>
+                              <option value="fast">🚀 Cepat / Sering (1.8s cycle)</option>
+                            </select>
+                          </div>
+
+                          {/* Jumlah Getaran Lonceng Slider + Manual Input */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-semibold text-slate-300">
+                                Jumlah Getar Lonceng
+                              </label>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  step={1}
+                                  disabled={!link.animation || link.animation === "none"}
+                                  value={link.animationCount ?? 3}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
+                                    updateLink(idx, "animationCount", val);
+                                  }}
+                                  className="w-14 px-2 py-0.5 bg-slate-900 border border-fuchsia-700/60 rounded-md text-xs font-mono font-bold text-fuchsia-300 outline-none focus:border-fuchsia-400 text-center disabled:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="text-xs font-mono font-bold text-fuchsia-400">x Getar</span>
+                              </div>
+                            </div>
+                            <input
+                              type="range"
+                              min={1}
+                              max={20}
+                              step={1}
+                              disabled={!link.animation || link.animation === "none"}
+                              value={link.animationCount ?? 3}
+                              onChange={(e) => updateLink(idx, "animationCount", parseInt(e.target.value))}
+                              className="w-full accent-fuchsia-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer disabled:opacity-30"
+                            />
+                          </div>
+
+                          {/* Kekuatan Gerakan Slider + Manual Input */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-semibold text-slate-300">
+                                Kekuatan Gerakan (Amplitudo)
+                              </label>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  step={1}
+                                  disabled={!link.animation || link.animation === "none"}
+                                  value={link.animationStrength ?? 5}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
+                                    updateLink(idx, "animationStrength", val);
+                                  }}
+                                  className="w-14 px-2 py-0.5 bg-slate-900 border border-fuchsia-700/60 rounded-md text-xs font-mono font-bold text-fuchsia-300 outline-none focus:border-fuchsia-400 text-center disabled:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="text-xs font-mono font-bold text-fuchsia-400">/20</span>
+                              </div>
+                            </div>
+                            <input
+                              type="range"
+                              min={1}
+                              max={20}
+                              step={1}
+                              disabled={!link.animation || link.animation === "none"}
+                              value={link.animationStrength ?? 5}
+                              onChange={(e) => updateLink(idx, "animationStrength", parseInt(e.target.value))}
+                              className="w-full accent-fuchsia-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer disabled:opacity-30"
+                            />
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              Bisa diatur 1 (sangat halus) hingga 20 (getaran ekstra kuat/heboh).
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 5. Custom Background Banner Kartu Link & Transparansi */}
+                      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                        <div className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-cyan-400" />
+                            <span>Background Banner Kartu Link & Transparansi</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold px-2 py-0.5 rounded bg-cyan-950/50 border border-cyan-800/40">
+                            REKOMENDASI: 1200 x 400 PX (3:1)
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                          {/* Upload / URL Input */}
+                          <div className="sm:col-span-2 space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={link.bgImageUrl || ""}
+                                onChange={(e) => updateLink(idx, "bgImageUrl", e.target.value)}
+                                className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-cyan-500 placeholder-slate-600 font-mono"
+                                placeholder="Paste URL gambar banner (https://...)"
+                              />
+                              <label
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
+                                  uploadingField === `link-cardbg-${idx}`
+                                    ? "bg-cyan-800 text-cyan-200 cursor-not-allowed"
+                                    : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                                }`}
+                              >
+                                {uploadingField === `link-cardbg-${idx}` ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Upload...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>Upload Banner</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={uploadingField === `link-cardbg-${idx}`}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleLinkCardBgUpload(file, idx);
+                                  }}
+                                />
+                              </label>
+                              {link.bgImageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    deleteUploadedFile(link.bgImageUrl);
+                                    updateLink(idx, "bgImageUrl", "");
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-bold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                  title="Hapus Gambar Banner dari Bucket"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                  <span>Hapus</span>
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400">
+                              ℹ️ <strong>Rekomendasi Ukuran Gambar Banner: 1200 x 400 pixel</strong> (Rasio 3:1 atau 4:1 mendatar). Gambar akan tampil secara penuh menutup area kartu link.
+                            </p>
+                          </div>
+
+                          {/* Slider Transparansi Kartu */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-semibold text-slate-300">
+                                Transparansi Kartu (Opacity)
+                              </label>
+                              <span className="text-xs font-mono font-bold text-cyan-400">
+                                {link.bgOpacity ?? 100}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={10}
+                              max={100}
+                              step={5}
+                              value={link.bgOpacity ?? 100}
+                              onChange={(e) => updateLink(idx, "bgOpacity", parseInt(e.target.value))}
+                              className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                            />
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              {link.bgOpacity !== undefined && link.bgOpacity < 100
+                                ? "Kartu agak transparan (Background halaman terlihat)"
+                                : "Kartu padat (100% Opacity)"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6. Efek Shadow Teks & Icon */}
+                      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                        <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <span>Kustomisasi Efek Shadow Teks & Ikon</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Shadow Teks */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Efek Bayangan Teks (Text Shadow)
+                            </label>
+                            <select
+                              value={link.textShadow || "none"}
+                              onChange={(e) => updateLink(idx, "textShadow", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-amber-500"
+                            >
+                              <option value="none">🚫 Tanpa Shadow Teks</option>
+                              <option value="subtle">☁️ Subtle (Bayangan Tipis)</option>
+                              <option value="medium">🌒 Medium (Bayangan Kontras Jelit)</option>
+                              <option value="heavy">🌑 Heavy (Bayangan Tebal Hitam / Legap)</option>
+                              <option value="glow">✨ Glowing Neon (Efek Cahaya Neon Sinar)</option>
+                            </select>
+                          </div>
+
+                          {/* Shadow Icon */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Efek Bayangan Ikon (Icon Shadow)
+                            </label>
+                            <select
+                              value={link.iconShadow || "none"}
+                              onChange={(e) => updateLink(idx, "iconShadow", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-amber-500"
+                            >
+                              <option value="none">🚫 Tanpa Shadow Ikon</option>
+                              <option value="subtle">☁️ Subtle (Bayangan Tipis)</option>
+                              <option value="medium">🌒 Medium (Bayangan 3D Timpa)</option>
+                              <option value="heavy">🌑 Heavy (Bayangan Tebal Timbul)</option>
+                              <option value="glow">✨ Glowing Neon (Cahaya Glow Warna)</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
 
@@ -3263,7 +3778,7 @@ export default function EditLinktreePage() {
                     alt={profile.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
-                  <h3 className="font-bold text-slate-100">{profile.name || "Virtus Official"}</h3>
+                  <h3 className="font-bold text-slate-100">{profile.name || "Microboy"}</h3>
                   <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
 
                   {/* Mini Preview Social Icons Bar */}

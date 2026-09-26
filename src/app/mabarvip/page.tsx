@@ -166,7 +166,7 @@ export default function MabarVipPage() {
               Memuat Data Mabar VIP
             </h2>
             <p className="text-xs text-slate-400">
-              Menghubungkan ke antrean real-time Virtus Official...
+              Menghubungkan ke antrean real-time Microboy...
             </p>
           </div>
 

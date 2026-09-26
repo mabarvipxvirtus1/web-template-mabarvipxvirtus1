@@ -20,8 +20,8 @@ export default function Header({ initialData }: HeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Bang Moon");
-  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
+  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Microboy");
+  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Official Streamer");
 
   // Auto-detect live status (auto TikTok detector) & site branding settings
   useEffect(() => {
@@ -91,82 +91,88 @@ export default function Header({ initialData }: HeaderProps = {}) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand Logo */}
-        <Link
-          href="/"
-          prefetch={true}
-          id="nav-brand-logo"
-          className="flex items-center gap-3 group shrink-0"
-        >
-          <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-            <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-none">
-              {siteTitle}
-            </h1>
-            <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">{siteSubtitle}</p>
-          </div>
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 relative flex items-center justify-between">
+        {/* Brand Logo (Left Side) */}
+        <div className="flex items-center justify-start z-10">
+          <Link
+            href="/"
+            prefetch={true}
+            id="nav-brand-logo"
+            className="flex items-center gap-3 group shrink-0 py-1"
+          >
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0 border border-slate-800/60 bg-slate-900">
+              <img src="/logo.png" alt="Microboy Logo" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-sm sm:text-base font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-tight">
+                {siteTitle}
+              </h1>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-medium leading-none mt-1">{siteSubtitle}</p>
+            </div>
+          </Link>
+        </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 border border-slate-800/80 p-1 rounded-xl">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            const active = isActive(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                prefetch={true}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${active
-                  ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
-                  : "text-slate-300 hover:text-white hover:bg-slate-850"
-                  }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{link.label}</span>
-                {link.badge && (
-                  <span
-                    className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${link.isLive
-                      ? "bg-red-500/20 text-red-400 border-red-500/30 shadow-sm shadow-red-500/20"
-                      : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                      }`}
-                  >
+        {/* Desktop Navigation Links (ABSOLUTE CENTERED ON DESKTOP) */}
+        <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center pointer-events-auto">
+          <nav className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800/80 p-1.5 rounded-2xl shadow-xl backdrop-blur-md">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  prefetch={true}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${active
+                    ? "bg-violet-600 text-white shadow-lg shadow-violet-600/30"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">{link.label}</span>
+                  {link.badge && (
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
+                      className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border whitespace-nowrap ${link.isLive
+                        ? "bg-red-500/20 text-red-400 border-red-500/30 shadow-sm shadow-red-500/20"
+                        : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                         }`}
-                    />
-                    {link.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
+                          }`}
+                      />
+                      {link.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-        {/* Desktop Admin Controls (Shown ONLY if logged in as Admin) */}
-        <div className="hidden md:flex items-center gap-3">
-          {isAdmin && (
+        {/* Desktop Admin Controls (Right Side) */}
+        <div className="hidden md:flex items-center justify-end z-10">
+          {isAdmin ? (
             <div className="flex items-center gap-2">
               <Link
                 href="/admin/dashboard"
                 id="nav-dashboard-btn"
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-100 bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-850 transition-all px-3 py-1.5 rounded-xl"
+                className="flex items-center gap-2 text-xs font-bold text-slate-100 bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 transition-all px-3.5 py-2 rounded-xl"
               >
-                <LayoutDashboard className="h-4 w-4 text-violet-400" />
+                <LayoutDashboard className="h-4 w-4 text-violet-400 shrink-0" />
                 <span>Dashboard Admin</span>
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: window.location.origin + "/" })}
                 id="nav-logout-btn"
-                className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 border border-red-900/40 hover:border-red-900/70 transition-all px-3 py-1.5 rounded-xl cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 border border-red-900/40 hover:border-red-900/70 transition-all px-3.5 py-2 rounded-xl cursor-pointer"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-3.5 w-3.5 shrink-0" />
                 <span>Logout</span>
               </button>
             </div>
+          ) : (
+            <div className="w-10" /> /* Spacer if not logged in to balance right flex space */
           )}
         </div>
 

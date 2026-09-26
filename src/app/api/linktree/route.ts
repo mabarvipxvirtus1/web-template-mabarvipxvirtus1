@@ -69,20 +69,20 @@ export async function GET() {
       profile = await prisma.linktreeProfile.create({
         data: {
           id: 'profile',
-          name: 'Bang Moon',
-          bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
+          name: 'Microboy',
+          bio: 'Streamer & Gaming Content Creator 🔥',
           avatarUrl: '/logo.png',
           avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
           theme: 'ocean',
           socialHeaderTitle: 'Social Media Handles',
           showLiveBanner: true,
           liveBannerTitle: 'Cupidut & Dudud Lovers',
-          liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Bang Moon',
+          liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Microboy',
           liveBannerUrl: '/fanbase-cupidut-dudud',
           liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-          siteTitle: 'Bang Moon',
-          siteSubtitle: 'Streamer TIDAK KIKIR',
-          footerDesc: 'Platform resmi Bang Moon. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+          siteTitle: 'Microboy',
+          siteSubtitle: 'Official Streamer',
+          footerDesc: 'Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
           links: { create: DEFAULT_LINKS },
           banners: { create: DEFAULT_BANNERS },
           topButtons: { create: DEFAULT_TOP_BUTTONS },
@@ -98,15 +98,7 @@ export async function GET() {
       });
     } else {
       let needsRefresh = false;
-      if (!profile.codes || profile.codes.length === 0) {
-        await prisma.linktreeCode.createMany({
-          data: DEFAULT_CODES.map((c) => ({
-            ...c,
-            profileId: 'profile',
-          })),
-        });
-        needsRefresh = true;
-      }
+
 
       // Seed default video ad if legacy videoAdUrl exists but videoAds table is empty
       if (profile.videoAdUrl && (!profile.videoAds || profile.videoAds.length === 0)) {
@@ -200,8 +192,11 @@ export async function PUT(request: Request) {
       socialIconColor,
       socialIconUseBrandColor,
       socialIconBg,
-      socialIconCustomBg,
-      socialIconShape,
+      bgImageUrl,
+      bgDarkness,
+      bgBlur,
+      bgEffect,
+      bgEffectSpeed,
       videoAds,
       links,
       banners,
@@ -261,8 +256,11 @@ export async function PUT(request: Request) {
         ...(socialIconColor !== undefined && { socialIconColor }),
         ...(socialIconUseBrandColor !== undefined && { socialIconUseBrandColor }),
         ...(socialIconBg !== undefined && { socialIconBg }),
-        ...(socialIconCustomBg !== undefined && { socialIconCustomBg }),
-        ...(socialIconShape !== undefined && { socialIconShape }),
+        ...(bgImageUrl !== undefined && { bgImageUrl }),
+        ...(bgDarkness !== undefined && { bgDarkness }),
+        ...(bgBlur !== undefined && { bgBlur }),
+        ...(bgEffect !== undefined && { bgEffect }),
+        ...(bgEffectSpeed !== undefined && { bgEffectSpeed }),
       },
       create: {
         id: 'profile',
@@ -279,11 +277,11 @@ export async function PUT(request: Request) {
         liveBannerSub: liveBannerSub || '',
         liveBannerUrl: liveBannerUrl || '/mabarvip',
         liveBannerImage: liveBannerImage || '',
-        siteTitle: siteTitle || 'Virtus Official',
-        siteSubtitle: siteSubtitle || 'Streamer TIDAK KIKIR',
+        siteTitle: siteTitle || 'Microboy',
+        siteSubtitle: siteSubtitle || 'Official Streamer',
         siteLogoUrl: siteLogoUrl || '',
         faviconUrl: faviconUrl || '',
-        footerDesc: footerDesc || 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+        footerDesc: footerDesc || 'Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
         showLeaderboard: showLeaderboard ?? true,
         leaderboardTitle: leaderboardTitle || 'TOP SUPPORTERS BULAN INI',
         sociabuzzTribeId: sociabuzzTribeId || '8913094574',
@@ -314,8 +312,11 @@ export async function PUT(request: Request) {
         socialIconColor: socialIconColor || '',
         socialIconUseBrandColor: socialIconUseBrandColor ?? false,
         socialIconBg: socialIconBg || 'glass',
-        socialIconCustomBg: socialIconCustomBg || '',
-        socialIconShape: socialIconShape || 'circle',
+        bgImageUrl: bgImageUrl || '',
+        bgDarkness: bgDarkness ?? 40,
+        bgBlur: bgBlur ?? 0,
+        bgEffect: bgEffect || 'none',
+        bgEffectSpeed: bgEffectSpeed || 'normal',
       },
     });
 
@@ -342,6 +343,14 @@ export async function PUT(request: Request) {
             sectionBgColor: typeof link.sectionBgColor === 'string' ? link.sectionBgColor : '',
             sectionTextColor: typeof link.sectionTextColor === 'string' ? link.sectionTextColor : '',
             waCustomMessage: typeof link.waCustomMessage === 'string' ? link.waCustomMessage : '',
+            animation: typeof link.animation === 'string' ? link.animation : 'none',
+            animationSpeed: typeof link.animationSpeed === 'string' ? link.animationSpeed : 'normal',
+            animationStrength: typeof link.animationStrength === 'number' && !isNaN(link.animationStrength) ? Math.max(1, Math.min(Math.round(link.animationStrength), 20)) : 5,
+            animationCount: typeof link.animationCount === 'number' && !isNaN(link.animationCount) ? Math.max(1, Math.min(Math.round(link.animationCount), 20)) : 3,
+            bgImageUrl: typeof link.bgImageUrl === 'string' ? link.bgImageUrl : '',
+            bgOpacity: typeof link.bgOpacity === 'number' && !isNaN(link.bgOpacity) ? Math.max(0, Math.min(Math.round(link.bgOpacity), 100)) : 100,
+            textShadow: typeof link.textShadow === 'string' ? link.textShadow : 'none',
+            iconShadow: typeof link.iconShadow === 'string' ? link.iconShadow : 'none',
             showInHeaderIcons: link.showInHeaderIcons ?? true,
             isEnabled: link.isEnabled ?? true,
             orderIndex: idx,

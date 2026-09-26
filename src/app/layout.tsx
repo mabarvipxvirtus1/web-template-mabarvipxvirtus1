@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bang Moon Page",
+  title: "Microboy Page",
   description: "Streamer & Content Creator",
 };
 
