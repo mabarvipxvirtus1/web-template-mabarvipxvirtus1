@@ -39,6 +39,11 @@ model LinktreeProfile {
   bio              String         @default("Streamer & Gaming Content Creator 🔥")
   avatarUrl        String         @default("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80")
   avatarBorderColor String        @default("from-cyan-400 via-indigo-500 to-purple-500")
+  bannerImageUrl   String         @default("") // Profile header banner image
+  showBannerImage  Boolean        @default(false) // Toggle banner profile
+  bannerHeight     Int            @default(260) // Height in px
+  bannerOpacity    Int            @default(50) // Gradient transparent percentage at bottom (0 to 100%)
+  bannerOffsetTop  Int            @default(0) // Top offset distance in px (posisi jarak dari atas)
   theme            String         @default("ocean") // ocean, dark, neon, sunset, glass
   socialHeaderTitle String        @default("Social Media Handles")
   showLiveBanner   Boolean        @default(true)
@@ -83,6 +88,7 @@ model LinktreeProfile {
   videoAdOffsetX         Int            @default(20)
   videoAdOffsetY         Int            @default(20)
   videoAdZIndex          Int            @default(50)
+  videoAdHideClose       Boolean        @default(false)
 
   // Social Media Header Icons Customization
   showSocialHeaderIcons  Boolean        @default(true)
