@@ -181,17 +181,6 @@ model LinktreeCode {
   updatedAt   DateTime        @updatedAt
 }
 
-model FanbaseCat {
-  id          String   @id @default(uuid())
-  catType     String   // "CUPIDUT" (abu-abu) | "DUDUD" (oren belang)
-  title       String
-  description String   @default("")
-  imageUrl    String
-  orderIndex  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
 model LinktreeVideoAd {
   id               String          @id @default(uuid())
   title            String          @default("Iklan Video")
