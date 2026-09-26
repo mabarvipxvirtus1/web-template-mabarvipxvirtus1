@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import path from 'path';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fxvalblrnbwosabyjnxe.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4dmFsYmxybmJ3b3NhYnlqbnhlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDE2NTExMiwiZXhwIjoyMTA1NzQxMTEyfQ.vjPIRrcRONabBff6jRvSlS6rbFKKWvfaAG1i5Gg1l4M';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xkslvfdguwvrhxetbmyw.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhrc2x2ZmRndXd2cmh4ZXRibXl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjUwODQ0NCwiZXhwIjoyMTAyMDg0NDQ0fQ.qbrIXts6YYgMQ7hQ90-TOCORsY9d7-gOZQQd6fm1tW8';
 
 // Initialize Supabase Client with Admin Service Role Key (bypasses RLS for uploads)
 const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -12,9 +12,9 @@ function extractFilenameFromUrl(url: string): string | null {
   if (!url || typeof url !== 'string') return null;
   try {
     const urlObj = new URL(url);
-    // Standard Supabase public storage URL: .../storage/v1/object/public/mabarvipxvirtus1/filename
+    // Standard Supabase public storage URL: .../storage/v1/object/public/assets/filename
     const pathnameParts = urlObj.pathname.split('/');
-    if (urlObj.pathname.includes('/storage/v1/object/public/mabarvipxvirtus1/') || urlObj.pathname.includes('/storage/v1/object/public/assets/')) {
+    if (urlObj.pathname.includes('/storage/v1/object/public/assets/')) {
       const filename = pathnameParts[pathnameParts.length - 1];
       return filename ? decodeURIComponent(filename) : null;
     }
@@ -34,12 +34,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Auto-delete old file if oldUrl is provided and points to Supabase mabarvipxvirtus1 bucket
+    // Auto-delete old file if oldUrl is provided and points to Supabase assets bucket
     if (oldUrl) {
       const oldFilename = extractFilenameFromUrl(oldUrl);
       if (oldFilename) {
         supabase.storage
-          .from('mabarvipxvirtus1')
+          .from('assets')
           .remove([oldFilename])
           .then(({ error }) => {
             if (error) console.error('Failed to auto-delete old file from Supabase:', error);
@@ -56,9 +56,9 @@ export async function POST(request: Request) {
     const filename = `upload-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
     const contentType = file.type || 'image/jpeg';
 
-    // Upload file directly to Supabase Storage bucket 'mabarvipxvirtus1'
+    // Upload file directly to Supabase Storage bucket 'assets'
     const { data, error } = await supabase.storage
-      .from('mabarvipxvirtus1')
+      .from('assets')
       .upload(filename, buffer, {
         contentType,
         upsert: true,
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     // Generate public URL
     const { data: publicUrlData } = supabase.storage
-      .from('mabarvipxvirtus1')
+      .from('assets')
       .getPublicUrl(filename);
 
     return NextResponse.json({ url: publicUrlData.publicUrl });
@@ -94,17 +94,71 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabase.storage
-      .from('mabarvipxvirtus1')
+      .from('assets')
       .remove([filename]);
-
-    if (error) {
-      console.error('Supabase storage delete error:', error);
-      throw error;
-    }
 
     return NextResponse.json({ success: true, message: `File ${filename} berhasil dihapus dari bucket Supabase` });
   } catch (error: any) {
     console.error('Error deleting file from Supabase:', error);
     return NextResponse.json({ error: error?.message || 'Gagal menghapus file' }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const filterType = searchParams.get('type'); // 'image' | 'video' | null
+
+    const { data, error } = await supabase.storage
+      .from('assets')
+      .list('', {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+
+    if (error) {
+      console.error('Supabase list files error:', error);
+      throw error;
+    }
+
+    const allFiles = (data || [])
+      .filter((file) => file.name !== '.emptyFolderPlaceholder')
+      .map((file) => {
+        const { data: publicUrlData } = supabase.storage
+          .from('assets')
+          .getPublicUrl(file.name);
+
+        const ext = path.extname(file.name).toLowerCase();
+        const isVideo = ['.mp4', '.webm', '.ogg', '.mov'].includes(ext);
+
+        return {
+          name: file.name,
+          url: publicUrlData.publicUrl,
+          size: file.metadata?.size || 0,
+          createdAt: file.created_at,
+          type: (isVideo ? 'video' : 'image') as 'video' | 'image',
+        };
+      });
+
+    const imageCount = allFiles.filter(f => f.type === 'image').length;
+    const videoCount = allFiles.filter(f => f.type === 'video').length;
+
+    const files = allFiles.filter((file) => {
+      if (!filterType) return true;
+      return file.type === filterType;
+    });
+
+    return NextResponse.json({
+      files,
+      counts: {
+        total: allFiles.length,
+        image: imageCount,
+        video: videoCount,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error listing files from Supabase:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to list bucket files' }, { status: 500 });
   }
 }

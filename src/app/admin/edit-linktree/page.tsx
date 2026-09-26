@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { ChromaVideoAd } from "@/components/ChromaVideoAd";
 import {
   ArrowLeft,
+  ArrowRight,
   Save,
   Plus,
   Trash2,
@@ -34,6 +35,17 @@ import {
   Columns3,
   Maximize2,
   Trophy,
+  Palette,
+  Share2,
+  Code2,
+  Layers,
+  ChevronRight,
+  ChevronLeft,
+  Menu,
+  Folder,
+  X,
+  Play,
+  RefreshCw,
 } from "lucide-react";
 
 interface LinkItem {
@@ -60,6 +72,19 @@ interface LinkItem {
   textShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
   iconShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
   showInHeaderIcons?: boolean;
+  itemType?: "link" | "video_banner";
+  subtitle?: string;
+  mediaType?: "image" | "video";
+  videoUrl?: string;
+  bannerHeight?: number;
+  badgeText?: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  btnText?: string;
+  btnTextColor?: string;
+  overlayDarkness?: number;
+  borderStyle?: "rounded-xl" | "rounded-2xl" | "rounded-3xl" | "rounded-none" | string;
+  borderColor?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -71,6 +96,19 @@ interface BannerItem {
   badgeText: string;
   targetUrl: string;
   imageUrl: string;
+  mediaType?: "image" | "video";
+  videoUrl?: string;
+  height?: number;
+  titleColor?: string;
+  titleSize?: "sm" | "base" | "lg" | "xl";
+  subtitleColor?: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  btnText?: string;
+  btnTextColor?: string;
+  overlayDarkness?: number;
+  borderStyle?: "rounded-xl" | "rounded-2xl" | "rounded-3xl" | "rounded-none" | string;
+  borderColor?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -112,6 +150,11 @@ interface ProfileData {
   bio: string;
   avatarUrl: string;
   avatarBorderColor: string;
+  bannerImageUrl?: string;
+  showBannerImage?: boolean;
+  bannerHeight?: number;
+  bannerOpacity?: number;
+  bannerOffsetTop?: number;
   theme: string;
   socialHeaderTitle: string;
   categoryBgColor?: string;
@@ -148,6 +191,7 @@ interface ProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  videoAdHideClose?: boolean;
   showSocialHeaderIcons?: boolean;
   socialIconPosition?: string;
   socialIconSize?: string;
@@ -207,26 +251,43 @@ export default function EditLinktreePage() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [activeSection, setActiveSection] = useState("sec-branding");
+  const [isNavOpen, setIsNavOpen] = useState(true);
+
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
+    const element = document.getElementById(id);
+    if (element) {
+      const yOffset = -90;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
 
   const [profile, setProfile] = useState<ProfileData>({
     id: "profile",
-    name: "Microboy",
-    bio: "Streamer & Gaming Content Creator 🔥",
+    name: "Virtus Official",
+    bio: "Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥",
     avatarUrl: "/logo.png",
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
+    bannerImageUrl: "",
+    showBannerImage: false,
+    bannerHeight: 260,
+    bannerOpacity: 50,
+    bannerOffsetTop: 0,
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     categoryBgColor: "",
     categoryTextColor: "",
     showLiveBanner: true,
     liveBannerTitle: "Cupidut & Dudud Lovers",
-    liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Microboy",
+    liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Virtus",
     liveBannerUrl: "/fanbase-cupidut-dudud",
     liveBannerImage: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
-    siteTitle: "Microboy",
-    siteSubtitle: "Official Streamer",
+    siteTitle: "Virtus Official",
+    siteSubtitle: "Streamer TIDAK KIKIR",
     siteLogoUrl: "",
-    footerDesc: "Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
+    footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
     showLeaderboard: true,
     leaderboardTitle: "TOP SUPPORTERS BULAN INI",
     sociabuzzTribeId: "8913094574",
@@ -250,6 +311,7 @@ export default function EditLinktreePage() {
     videoAdOffsetX: 20,
     videoAdOffsetY: 20,
     videoAdZIndex: 50,
+    videoAdHideClose: false,
     showSocialHeaderIcons: true,
     socialIconPosition: "under_bio",
     socialIconSize: "md",
@@ -293,6 +355,93 @@ export default function EditLinktreePage() {
   const [bioLinkUnderline, setBioLinkUnderline] = useState(true);
   const [bioLinkColor, setBioLinkColor] = useState("#38bdf8");
   const [showBioLinkModal, setShowBioLinkModal] = useState(false);
+  // Bucket Media Picker Modal States
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [mediaPickerType, setMediaPickerType] = useState<"image" | "video">("image");
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<{
+    targetType: "link" | "banner";
+    index: number;
+    field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl";
+  } | null>(null);
+  const [bucketFiles, setBucketFiles] = useState<Array<{ name: string; url: string; size: number; createdAt: string; type: "image" | "video" }>>([]);
+  const [bucketCounts, setBucketCounts] = useState<{ total: number; image: number; video: number }>({ total: 0, image: 0, video: 0 });
+  const [loadingBucketFiles, setLoadingBucketFiles] = useState(false);
+
+  const fetchBucketFiles = async (type?: "image" | "video") => {
+    setLoadingBucketFiles(true);
+    try {
+      const url = type ? `/api/upload?type=${type}` : `/api/upload`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setBucketFiles(data.files || []);
+        if (data.counts) {
+          setBucketCounts(data.counts);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load bucket files:", e);
+    } finally {
+      setLoadingBucketFiles(false);
+    }
+  };
+
+  const openMediaPicker = (
+    index: number,
+    field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl",
+    type: "image" | "video",
+    targetType: "link" | "banner" = "banner"
+  ) => {
+    setMediaPickerTarget({ targetType, index, field });
+    setMediaPickerType(type);
+    setShowMediaPicker(true);
+    fetchBucketFiles(type);
+  };
+
+  const updateMultipleLinkFields = (index: number, fields: Partial<LinkItem>) => {
+    setProfile((prev) => {
+      const updatedLinks = [...prev.links];
+      if (updatedLinks[index]) {
+        updatedLinks[index] = { ...updatedLinks[index], ...fields };
+      }
+      return { ...prev, links: updatedLinks };
+    });
+  };
+
+  const updateMultipleBannerFields = (index: number, fields: Partial<BannerItem>) => {
+    setProfile((prev) => {
+      const updatedBanners = [...(prev.banners || [])];
+      if (updatedBanners[index]) {
+        updatedBanners[index] = { ...updatedBanners[index], ...fields };
+      }
+      return { ...prev, banners: updatedBanners };
+    });
+  };
+
+  const selectMediaFromBucket = (url: string) => {
+    if (mediaPickerTarget) {
+      const { targetType, index, field } = mediaPickerTarget;
+      if (targetType === "link") {
+        if (field === "videoUrl") {
+          updateMultipleLinkFields(index, { videoUrl: url, mediaType: "video" });
+        } else if (field === "bgImageUrl") {
+          updateMultipleLinkFields(index, { bgImageUrl: url, mediaType: "image" });
+        } else if (field === "customIconUrl") {
+          updateMultipleLinkFields(index, { customIconUrl: url, icon: "custom" });
+        } else {
+          updateMultipleLinkFields(index, { [field]: url } as any);
+        }
+      } else {
+        if (field === "videoUrl") {
+          updateMultipleBannerFields(index, { videoUrl: url, mediaType: "video" });
+        } else {
+          updateMultipleBannerFields(index, { [field]: url, mediaType: "image" } as any);
+        }
+      }
+      setSaveSuccess(false);
+    }
+    setShowMediaPicker(false);
+  };
 
   const insertBioLink = () => {
     if (!bioLinkText.trim() || !bioLinkUrl.trim()) return;
@@ -371,10 +520,10 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl" | "bannerImageUrl") => {
     setUploadingField(field);
     try {
-      const compressedBlob = await compressImage(file, 800, 800, 0.85);
+      const compressedBlob = await compressImage(file, field === "bannerImageUrl" ? 1200 : 800, field === "bannerImageUrl" ? 600 : 800, 0.85);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
       if (profile[field]) {
@@ -586,6 +735,63 @@ export default function EditLinktreePage() {
     fetchLinktreeData();
   }, []);
 
+  // Real-time ScrollSpy: Memperbarui highlight menu pintasan secara realtime sesuai posisi scroll layar
+  useEffect(() => {
+    const sectionIds = [
+      "sec-branding",
+      "sec-video-ads",
+      "sec-profile",
+      "sec-background",
+      "sec-social-icons",
+      "sec-leaderboard",
+      "sec-top-buttons",
+      "sec-game-codes",
+      "sec-themes",
+      "sec-links",
+      "sec-banners",
+    ];
+
+    const handleScroll = () => {
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const targetPoint = scrollY + 160; // Titik deteksi di area atas viewport
+
+      let currentSecId = sectionIds[0];
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.offsetTop;
+          if (targetPoint >= top) {
+            currentSecId = id;
+          }
+        }
+      }
+
+      // Deteksi lebih spesifik jika user sedang berada di link item tertentu
+      if (profile.links && profile.links.length > 0) {
+        for (let i = 0; i < profile.links.length; i++) {
+          const itemEl = document.getElementById(`link-item-${i}`);
+          if (itemEl) {
+            const itemTop = itemEl.offsetTop;
+            if (targetPoint >= itemTop && targetPoint <= itemTop + itemEl.offsetHeight) {
+              currentSecId = `link-item-${i}`;
+              break;
+            }
+          }
+        }
+      }
+
+      setActiveSection(currentSecId);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Run once on load to initialize active section
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
@@ -595,7 +801,7 @@ export default function EditLinktreePage() {
       const res = await fetch("/api/linktree", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({ ...profile, banners: [] }),
       });
 
       if (res.ok) {
@@ -688,6 +894,43 @@ export default function EditLinktreePage() {
     }
   };
 
+  const handleLinkVideoUpload = async (file: File, index: number) => {
+    if (!file) return;
+    setUploadingField(`link-video-${index}`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (profile.links[index]?.videoUrl) {
+        formData.append("oldUrl", profile.links[index].videoUrl);
+      }
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        const updatedLinks = [...profile.links];
+        updatedLinks[index] = {
+          ...updatedLinks[index],
+          videoUrl: data.url,
+          mediaType: "video",
+        };
+        setProfile({ ...profile, links: updatedLinks });
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah video promo: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Link video upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah video: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const addLink = () => {
     const newLink: LinkItem = {
       id: `new-${Date.now()}`,
@@ -711,9 +954,13 @@ export default function EditLinktreePage() {
   };
 
   const updateLink = (index: number, key: keyof LinkItem, value: any) => {
-    const updatedLinks = [...profile.links];
-    updatedLinks[index] = { ...updatedLinks[index], [key]: value };
-    setProfile({ ...profile, links: updatedLinks });
+    setProfile((prev) => {
+      const updatedLinks = [...prev.links];
+      if (updatedLinks[index]) {
+        updatedLinks[index] = { ...updatedLinks[index], [key]: value };
+      }
+      return { ...prev, links: updatedLinks };
+    });
   };
 
   const removeLink = (index: number) => {
@@ -721,8 +968,10 @@ export default function EditLinktreePage() {
     if (targetLink?.customIconUrl) {
       deleteUploadedFile(targetLink.customIconUrl);
     }
-    const updatedLinks = profile.links.filter((_, i) => i !== index);
-    setProfile({ ...profile, links: updatedLinks });
+    setProfile((prev) => ({
+      ...prev,
+      links: prev.links.filter((_, i) => i !== index),
+    }));
   };
 
   const moveLink = (index: number, direction: "up" | "down") => {
@@ -733,14 +982,14 @@ export default function EditLinktreePage() {
       return;
     }
     const targetIdx = direction === "up" ? index - 1 : index + 1;
-    const updatedLinks = [...profile.links];
-    const temp = updatedLinks[index];
-    updatedLinks[index] = updatedLinks[targetIdx];
-    updatedLinks[targetIdx] = temp;
-
-    // re-index
-    updatedLinks.forEach((item, idx) => (item.orderIndex = idx));
-    setProfile({ ...profile, links: updatedLinks });
+    setProfile((prev) => {
+      const updatedLinks = [...prev.links];
+      const temp = updatedLinks[index];
+      updatedLinks[index] = updatedLinks[targetIdx];
+      updatedLinks[targetIdx] = temp;
+      updatedLinks.forEach((item, idx) => (item.orderIndex = idx));
+      return { ...prev, links: updatedLinks };
+    });
   };
 
   const addBanner = () => {
@@ -751,22 +1000,73 @@ export default function EditLinktreePage() {
       badgeText: "PROMO / EVENT",
       targetUrl: "/mabarvip",
       imageUrl: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
+      mediaType: "image",
+      videoUrl: "",
+      height: 185,
+      titleColor: "#FFFFFF",
+      titleSize: "lg",
+      subtitleColor: "#CBD5E1",
+      badgeBgColor: "rgba(6, 182, 212, 0.25)",
+      badgeTextColor: "#22D3EE",
+      btnText: "Kunjungi",
+      btnTextColor: "#22D3EE",
+      overlayDarkness: 60,
+      borderStyle: "rounded-3xl",
+      borderColor: "rgba(255, 255, 255, 0.2)",
       isEnabled: true,
       orderIndex: profile.banners?.length || 0,
     };
-    setProfile({ ...profile, banners: [...(profile.banners || []), newBanner] });
+    setProfile((prev) => ({ ...prev, banners: [...(prev.banners || []), newBanner] }));
+  };
+
+  const handleBannerVideoUpload = async (file: File, index: number) => {
+    if (!file) return;
+    setUploadingField(`banner-video-${index}`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (profile.banners?.[index]?.videoUrl) {
+        formData.append("oldUrl", profile.banners[index].videoUrl);
+      }
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        updateMultipleBannerFields(index, { videoUrl: data.url, mediaType: "video" });
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah video promo: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Banner video upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah video: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   const updateBanner = (index: number, key: keyof BannerItem, value: any) => {
-    const updated = [...(profile.banners || [])];
-    updated[index] = { ...updated[index], [key]: value };
-    setProfile({ ...profile, banners: updated });
+    setProfile((prev) => {
+      const updated = [...(prev.banners || [])];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [key]: value };
+      }
+      return { ...prev, banners: updated };
+    });
   };
 
   const removeBanner = (index: number) => {
     const targetBanner = profile.banners?.[index];
     if (targetBanner?.imageUrl) {
       deleteUploadedFile(targetBanner.imageUrl);
+    }
+    if (targetBanner?.videoUrl) {
+      deleteUploadedFile(targetBanner.videoUrl);
     }
     const updated = (profile.banners || []).filter((_, i) => i !== index);
     setProfile({ ...profile, banners: updated });
@@ -937,6 +1237,126 @@ export default function EditLinktreePage() {
         </div>
       </header>
 
+      {/* Floating Shortcuts Navigation Sidebar (Disebelah Kiri) */}
+      <aside
+        className={`fixed left-3 sm:left-5 top-28 z-40 transition-all duration-300 ease-in-out select-none ${
+          isNavOpen ? "translate-x-0" : "-translate-x-[calc(100%-12px)] sm:-translate-x-[calc(100%-14px)]"
+        }`}
+      >
+        <div className="flex items-start">
+          <div className="w-52 sm:w-56 p-2 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 shadow-2xl space-y-1 text-xs">
+            <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+              <span className="flex items-center gap-1.5 text-cyan-400">
+                <Layers className="w-3.5 h-3.5" />
+                <span>Pintasan Menu</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsNavOpen(false)}
+                className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Tutup Navigasi"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="max-h-[68vh] overflow-y-auto pr-1 space-y-1 custom-scrollbar">
+              {[
+                { id: "sec-branding", label: "Branding Web", icon: Globe, color: "text-fuchsia-400" },
+                { id: "sec-video-ads", label: "Iklan Video Overlay", icon: Video, color: "text-purple-400" },
+                { id: "sec-profile", label: "Profil & Banner", icon: User, color: "text-indigo-400" },
+                { id: "sec-background", label: "Background & Efek", icon: Sparkles, color: "text-amber-400" },
+                { id: "sec-social-icons", label: "Icon Social Header", icon: Share2, color: "text-blue-400" },
+                { id: "sec-leaderboard", label: "Leaderboard Top", icon: Trophy, color: "text-yellow-400" },
+                { id: "sec-top-buttons", label: "Tombol Aksi Atas", icon: Gamepad2, color: "text-cyan-400" },
+                { id: "sec-game-codes", label: "Kode Sensitivitas", icon: Code2, color: "text-violet-400" },
+                { id: "sec-themes", label: "Pilihan Tema", icon: Palette, color: "text-pink-400" },
+                { id: "sec-links", label: `Daftar Link (${profile.links.length})`, icon: LinkIcon, color: "text-emerald-400" },
+              ].map((item) => {
+                const IconComponent = item.icon;
+                const isActive = activeSection === item.id;
+                const isLinksSec = item.id === "sec-links";
+                return (
+                  <div key={item.id} className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection(item.id)}
+                      className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl font-medium text-left transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-gradient-to-r from-violet-600/30 to-cyan-600/20 text-white border border-cyan-500/40 shadow-sm"
+                          : "text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <IconComponent className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
+                        <span className="truncate text-[11px] font-semibold">{item.label}</span>
+                      </div>
+                      {isLinksSec && profile.links.length > 0 && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">
+                          {profile.links.length}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Sub-menu Urutan Item di Bawah Daftar Link */}
+                    {isLinksSec && profile.links && profile.links.length > 0 && (
+                      <div className="ml-3 pl-2.5 border-l border-emerald-500/30 space-y-1 py-1">
+                        {profile.links.map((link, idx) => {
+                          const isBannerType = link.itemType === "video_banner";
+                          const isItemActive = activeSection === `link-item-${idx}`;
+                          return (
+                            <button
+                              key={link.id || idx}
+                              type="button"
+                              onClick={() => scrollToSection(`link-item-${idx}`)}
+                              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-left transition-all cursor-pointer text-[10px] group ${
+                                isItemActive
+                                  ? "bg-emerald-900/40 text-emerald-200 font-bold border border-emerald-500/50 shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                              }`}
+                              title={`Lompat ke #${idx + 1} ${link.title}`}
+                            >
+                              <span className="font-mono text-[9px] text-slate-500 group-hover:text-emerald-400 shrink-0">
+                                #{idx + 1}
+                              </span>
+                              {isBannerType ? (
+                                <Video className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                              ) : (
+                                <LinkIcon className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                              )}
+                              <span className="truncate flex-1">
+                                {link.title || (isBannerType ? "Banner Promo" : "Link")}
+                              </span>
+                              {isBannerType && (
+                                <span className="text-[8px] bg-purple-950 text-purple-300 px-1 rounded uppercase font-bold shrink-0">
+                                  Promo
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Toggle Tab Button when closed */}
+          {!isNavOpen && (
+            <button
+              type="button"
+              onClick={() => setIsNavOpen(true)}
+              className="ml-1 p-2 rounded-r-xl bg-slate-900/90 hover:bg-slate-800 backdrop-blur-xl border border-l-0 border-slate-700/80 text-cyan-400 shadow-2xl transition-all cursor-pointer flex items-center justify-center group"
+              title="Buka Pintasan Navigasi"
+            >
+              <ChevronRight className="w-4 h-4 group-hover:scale-125 transition-transform" />
+            </button>
+          )}
+        </div>
+      </aside>
+
       {/* Main Content Form */}
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 space-y-8">
         {error && (
@@ -955,7 +1375,7 @@ export default function EditLinktreePage() {
           {/* Left / Middle: Configuration Panel */}
           <div className="lg:col-span-2 space-y-8">
             {/* Section 0.5: Branding Website (Header & Footer) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-branding" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <Globe className="w-5 h-5 text-fuchsia-400" />
                 <span>Branding Header & Footer Website</span>
@@ -966,10 +1386,10 @@ export default function EditLinktreePage() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header & Footer</label>
                   <input
                     type="text"
-                    value={profile.siteTitle || "Microboy"}
+                    value={profile.siteTitle || "Virtus Official"}
                     onChange={(e) => setProfile({ ...profile, siteTitle: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Contoh: Microboy"
+                    placeholder="Contoh: Virtus Official"
                   />
                 </div>
 
@@ -977,10 +1397,10 @@ export default function EditLinktreePage() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Sub-judul / Tagline Website</label>
                   <input
                     type="text"
-                    value={profile.siteSubtitle || "Official Streamer"}
+                    value={profile.siteSubtitle || "Streamer TIDAK KIKIR"}
                     onChange={(e) => setProfile({ ...profile, siteSubtitle: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Contoh: Official Streamer"
+                    placeholder="Contoh: Streamer TIDAK KIKIR"
                   />
                 </div>
               </div>
@@ -1035,7 +1455,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 0.8: Iklan Video Overlay (Chroma Key MP4) */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl relative overflow-hidden">
+            <div id="sec-video-ads" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl relative overflow-hidden scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400">
@@ -1171,6 +1591,32 @@ export default function EditLinktreePage() {
                           className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
                         />
                       </div>
+                    </div>
+
+                    {/* Opsi Hilangkan Tombol Close */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                          <span>Hilangkan Tombol Close (Silang)</span>
+                          {profile.videoAdHideClose && (
+                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">
+                              Tombol (X) Disembunyikan
+                            </span>
+                          )}
+                        </span>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Jika diaktifkan, tombol close &apos;X&apos; di pojok video iklan tidak akan muncul sehingga pengunjung tidak bisa menutup video.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer select-none shrink-0 ml-4">
+                        <input
+                          type="checkbox"
+                          checked={profile.videoAdHideClose || false}
+                          onChange={(e) => setProfile({ ...profile, videoAdHideClose: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                      </label>
                     </div>
                   </div>
 
@@ -1493,7 +1939,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1: Profil */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-profile" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <User className="w-5 h-5 text-indigo-400" />
                 <span>Informasi Profil</span>
@@ -1553,6 +1999,165 @@ export default function EditLinktreePage() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Banner Profile (Header Cover Image with Gradient) */}
+              <div className="p-4 rounded-xl bg-slate-950/80 border border-indigo-500/20 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-indigo-400" />
+                      <span>Banner Header Profil (Cover Banner)</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Tambahkan foto banner atas profil dengan efek gradasi transparan (gradasi halus dari atas ke bawah transparan menyatu ke background).
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer select-none shrink-0 ml-3">
+                    <input
+                      type="checkbox"
+                      checked={profile.showBannerImage || false}
+                      onChange={(e) => setProfile({ ...profile, showBannerImage: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {profile.showBannerImage && (
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          URL Gambar Banner Profil / Upload
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={profile.bannerImageUrl || ""}
+                            onChange={(e) => setProfile({ ...profile, bannerImageUrl: e.target.value })}
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-100 focus:border-indigo-500 font-mono"
+                            placeholder="https://images.unsplash.com/..."
+                          />
+                          <label className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
+                            {uploadingField === "bannerImageUrl" ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5" />
+                            )}
+                            <span>Upload Banner</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "bannerImageUrl");
+                              }}
+                            />
+                          </label>
+                          {profile.bannerImageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                deleteUploadedFile(profile.bannerImageUrl);
+                                setProfile({ ...profile, bannerImageUrl: "" });
+                              }}
+                              className="px-2.5 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-lg text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Hapus Banner"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              <span>Hapus</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Slider Tinggi Banner */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Tinggi Banner</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerHeight || 260}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="140"
+                          max="450"
+                          step="10"
+                          value={profile.bannerHeight || 260}
+                          onChange={(e) => setProfile({ ...profile, bannerHeight: parseInt(e.target.value) || 260 })}
+                          className="w-full accent-indigo-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">Mengatur tinggi area foto cover banner.</p>
+                      </div>
+
+                      {/* Slider Persentase Transparan Gradasi */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Gradasi Transparan Bawah</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerOpacity ?? 50}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value={profile.bannerOpacity ?? 50}
+                          onChange={(e) => setProfile({ ...profile, bannerOpacity: parseInt(e.target.value) || 0 })}
+                          className="w-full accent-indigo-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">Tingkat transparansi memudar pada bagian bawah banner.</p>
+                      </div>
+
+                      {/* Slider Jarak / Posisi dari Atas */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Jarak Posisi Atas (Offset)</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerOffsetTop ?? 0}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-50"
+                          max="100"
+                          step="5"
+                          value={profile.bannerOffsetTop ?? 0}
+                          onChange={(e) => setProfile({ ...profile, bannerOffsetTop: parseInt(e.target.value) || 0 })}
+                          className="w-full accent-indigo-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">0px = mulai dari paling atas di belakang tombol Mabar VIP.</p>
+                      </div>
+                    </div>
+
+                    {/* Preview Mini Banner Profil */}
+                    {profile.bannerImageUrl && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Preview Gradasi Transparan ({profile.bannerOpacity ?? 50}% Transparan):
+                          </span>
+                          <span className="text-[10px] text-indigo-400 font-mono">
+                            Tinggi: {profile.bannerHeight || 260}px | Offset: {profile.bannerOffsetTop ?? 0}px
+                          </span>
+                        </div>
+                        <div
+                          className="relative w-full rounded-t-2xl overflow-hidden group"
+                          style={{
+                            height: `${Math.min(profile.bannerHeight || 260, 200)}px`,
+                            WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 80%, rgba(0,0,0,0) 100%)`,
+                            maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 80%, rgba(0,0,0,0) 100%)`,
+                          }}
+                        >
+                          <img
+                            src={profile.bannerImageUrl}
+                            alt="Banner Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1832,7 +2437,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 2: Custom Background & Visual Effects */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl">
+            <div id="sec-background" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-fuchsia-400" />
@@ -1994,8 +2599,8 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Microboy) */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl">
+            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Virtus Official) */}
+            <div id="sec-social-icons" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400">
@@ -2003,13 +2608,13 @@ export default function EditLinktreePage() {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                      <span>Icon Social Media Header (Bawah Judul Microboy)</span>
+                      <span>Icon Social Media Header (Bawah Judul Virtus Official)</span>
                       <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono border border-cyan-500/30">
                         Linktree Icon Bar
                       </span>
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Microboy dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
+                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Virtus Official dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
                     </p>
                   </div>
                 </div>
@@ -2035,7 +2640,7 @@ export default function EditLinktreePage() {
                     <label className="block text-xs font-bold text-slate-200 mb-2">Posisi Penempatan Icon Bar</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
-                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Microboy" },
+                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Virtus Official" },
                         { id: "above_links", label: "📋 Di Atas Links List", desc: "Di atas daftar link utama" },
                         { id: "disabled", label: "🚫 Sembunyikan Bar", desc: "Nonaktifkan icon bar header" },
                       ].map((pos) => (
@@ -2239,7 +2844,7 @@ export default function EditLinktreePage() {
                       </label>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Microboy:
+                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Virtus Official:
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -2275,7 +2880,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.2: Pengaturan Leaderboard (Top Supporters) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5">
+            <div id="sec-leaderboard" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-amber-400" />
@@ -2541,7 +3146,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.5: Tombol Aksi Atas (Header Top Buttons) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-top-buttons" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Gamepad2 className="w-5 h-5 text-cyan-400" />
@@ -2663,7 +3268,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.7: Kode Sensitivitas & Kode Game (Dibawah Bio) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-game-codes" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Gamepad2 className="w-5 h-5 text-violet-400" />
@@ -2755,7 +3360,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 2.5: Tema Visual */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-themes" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <Layout className="w-5 h-5 text-purple-400" />
                 <span>Pilih Tema Warna Standar</span>
@@ -2781,7 +3386,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 3: Daftar Link (Social & Custom) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-links" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <LinkIcon className="w-5 h-5 text-emerald-400" />
@@ -2801,7 +3406,8 @@ export default function EditLinktreePage() {
                 {profile.links.map((link, idx) => (
                   <div
                     key={link.id || idx}
-                    className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group"
+                    id={`link-item-${idx}`}
+                    className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group scroll-mt-24"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -2860,52 +3466,431 @@ export default function EditLinktreePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">
-                          Sub-Judul / Kategori <span className="text-slate-500 font-normal">(opsional)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={link.sectionTitle || ""}
-                          onChange={(e) => updateLink(idx, "sectionTitle", e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 placeholder-slate-600 font-medium"
-                          placeholder="Misal: Top Up, Social Media, dll"
-                        />
+                    {/* Tipe Selector: Link Biasa vs Video / Banner Promo */}
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300">Format Kartu:</span>
+                        <div className="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => updateLink(idx, "itemType", "link")}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              (link.itemType || "link") === "link"
+                                ? "bg-emerald-600 text-white shadow-sm"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            <LinkIcon className="w-3.5 h-3.5" />
+                            <span>Link Biasa</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateLink(idx, "itemType", "video_banner")}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              link.itemType === "video_banner"
+                                ? "bg-purple-600 text-white shadow-sm"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Video / Banner Promo</span>
+                          </button>
+                        </div>
                       </div>
-
-                      <div className="sm:col-span-2">
-                        <label className="block text-[11px] text-slate-400 mb-1">URL Tujuan</label>
-                        <input
-                          type="text"
-                          value={link.url}
-                          onChange={(e) => updateLink(idx, "url", e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500"
-                          placeholder="https://..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">Ikon</label>
-                        <select
-                          value={link.icon}
-                          onChange={(e) => {
-                            const newIcon = e.target.value;
-                            updateLink(idx, "icon", newIcon);
-                            if (newIcon === "custom" && !link.iconWidth) {
-                              updateLink(idx, "iconWidth", link.layout === "column" ? 80 : 48);
-                            }
-                          }}
-                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 font-medium"
-                        >
-                          {AVAILABLE_ICONS.map((ic) => (
-                            <option key={ic.id} value={ic.id}>
-                              {ic.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {link.itemType === "video_banner" && (
+                        <span className="text-[10px] font-mono text-purple-400 bg-purple-950/60 border border-purple-800/40 px-2 py-0.5 rounded-full font-bold">
+                          ✨ Tanpa Ikon Link (Full Media Card)
+                        </span>
+                      )}
                     </div>
+
+                    {link.itemType === "video_banner" ? (
+                      /* Kustomisasi Khusus Video / Banner Promo */
+                      <div className="space-y-4 pt-1">
+                        {/* URL Tujuan, Sub-Judul & Deskripsi */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">
+                              Sub-Judul Grup / Kategori <span className="text-slate-500">(opsional)</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={link.sectionTitle || ""}
+                              onChange={(e) => updateLink(idx, "sectionTitle", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-purple-500"
+                              placeholder="Misal: Event Terkini"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">
+                              Teks Badge Pojok <span className="text-slate-500">(opsional)</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={link.badgeText || ""}
+                              onChange={(e) => updateLink(idx, "badgeText", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-purple-500"
+                              placeholder="PROMO / LIVE / EVENT"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">
+                              URL Tujuan Klik
+                            </label>
+                            <input
+                              type="text"
+                              value={link.url}
+                              onChange={(e) => updateLink(idx, "url", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-purple-500"
+                              placeholder="https://... atau /mabarvip"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            Deskripsi / Teks Penjelas Banner
+                          </label>
+                          <input
+                            type="text"
+                            value={link.subtitle || ""}
+                            onChange={(e) => updateLink(idx, "subtitle", e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-purple-500"
+                            placeholder="Deskripsi singkat konten yang dipromosikan..."
+                          />
+                        </div>
+
+                        {/* Format Media: Gambar vs Video Promo */}
+                        <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-800/40 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                              <Sparkles className="w-4 h-4 text-purple-400" />
+                              <span>Format Media Promo</span>
+                            </label>
+                            <div className="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-800">
+                              <button
+                                type="button"
+                                onClick={() => updateLink(idx, "mediaType", "image")}
+                                className={`px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                                  (link.mediaType || "image") === "image"
+                                    ? "bg-purple-600 text-white"
+                                    : "text-slate-400 hover:text-slate-200"
+                                }`}
+                              >
+                                Gambar / Poster
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateLink(idx, "mediaType", "video")}
+                                className={`px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                                  link.mediaType === "video"
+                                    ? "bg-purple-600 text-white"
+                                    : "text-slate-400 hover:text-slate-200"
+                                }`}
+                              >
+                                <Video className="w-3.5 h-3.5" />
+                                <span>Video Promo</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Media Controls: Video vs Gambar */}
+                          {link.mediaType === "video" ? (
+                            <div className="space-y-2">
+                              <div>
+                                <label className="block text-[11px] text-slate-400 mb-1">
+                                  Video Promo URL (MP4 / WebM / Supabase Storage)
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                  <input
+                                    type="text"
+                                    value={link.videoUrl || ""}
+                                    onChange={(e) => updateLink(idx, "videoUrl", e.target.value)}
+                                    className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono outline-none text-slate-200 focus:border-purple-500"
+                                    placeholder="https://.../promo-video.mp4"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => openMediaPicker(idx, "videoUrl", "video", "link")}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                    title="Pilih video yang sudah ada di Bucket Storage"
+                                  >
+                                    <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                    <span>Pilih Dari Bucket</span>
+                                  </button>
+                                  <label className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
+                                    {uploadingField === `link-video-${idx}` ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Upload className="w-3.5 h-3.5" />
+                                    )}
+                                    <span>Upload MP4</span>
+                                    <input
+                                      type="file"
+                                      accept="video/mp4,video/webm,video/ogg"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleLinkVideoUpload(file, idx);
+                                      }}
+                                    />
+                                  </label>
+                                  {link.videoUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        deleteUploadedFile(link.videoUrl || "");
+                                        updateLink(idx, "videoUrl", "");
+                                      }}
+                                      className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                      title="Hapus Video Promo dari Bucket Supabase"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                      <span>Hapus</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-purple-300/80">
+                                * Video promo akan diputar otomatis tanpa suara (autoplay loop muted playsinline) langsung di stream daftar link.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div>
+                                <label className="block text-[11px] text-slate-400 mb-1">
+                                  Gambar Banner Promo URL
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                  <input
+                                    type="text"
+                                    value={link.bgImageUrl || ""}
+                                    onChange={(e) => updateLink(idx, "bgImageUrl", e.target.value)}
+                                    className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono outline-none text-slate-200 focus:border-purple-500"
+                                    placeholder="https://images.unsplash.com/..."
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => openMediaPicker(idx, "bgImageUrl", "image", "link")}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                    title="Pilih gambar yang sudah ada di Bucket Storage"
+                                  >
+                                    <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                    <span>Pilih Dari Bucket</span>
+                                  </button>
+                                  <label className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
+                                    {uploadingField === `link-cardbg-${idx}` ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Upload className="w-3.5 h-3.5" />
+                                    )}
+                                    <span>Upload Gambar</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleLinkCardBgUpload(file, idx);
+                                      }}
+                                    />
+                                  </label>
+                                  {link.bgImageUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        deleteUploadedFile(link.bgImageUrl || "");
+                                        updateLink(idx, "bgImageUrl", "");
+                                      }}
+                                      className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                      title="Hapus Gambar Banner dari Bucket"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                      <span>Hapus</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Pengaturan Visual Tinggi, Tombol, dsb */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">
+                              Tinggi Kartu ({link.bannerHeight || 185}px)
+                            </label>
+                            <input
+                              type="range"
+                              min="130"
+                              max="380"
+                              step="5"
+                              value={link.bannerHeight || 185}
+                              onChange={(e) => updateLink(idx, "bannerHeight", parseInt(e.target.value))}
+                              className="w-full accent-purple-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">
+                              Kegelapan Bayangan ({link.overlayDarkness ?? 60}%)
+                            </label>
+                            <input
+                              type="range"
+                              min="10"
+                              max="95"
+                              step="5"
+                              value={link.overlayDarkness ?? 60}
+                              onChange={(e) => updateLink(idx, "overlayDarkness", parseInt(e.target.value))}
+                              className="w-full accent-cyan-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">Teks Tombol Aksi</label>
+                            <input
+                              type="text"
+                              value={link.btnText || "Kunjungi"}
+                              onChange={(e) => updateLink(idx, "btnText", e.target.value)}
+                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-cyan-500"
+                              placeholder="Kunjungi / Tonton"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">Lengkungan Kartu</label>
+                            <select
+                              value={link.borderStyle || "rounded-3xl"}
+                              onChange={(e) => updateLink(idx, "borderStyle", e.target.value)}
+                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none"
+                            >
+                              <option value="rounded-3xl">Bulat Mewah (3XL)</option>
+                              <option value="rounded-2xl">Sedang (2XL)</option>
+                              <option value="rounded-xl">Kecil (XL)</option>
+                              <option value="rounded-none">Persegi</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Mini Preview Video / Banner Promo Item */}
+                        <div className="pt-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                            Live Preview Kartu Promo (Item #{idx + 1}):
+                          </span>
+                          <div
+                            className={`relative w-full overflow-hidden shadow-xl bg-slate-950 border border-white/20 ${link.borderStyle || "rounded-3xl"}`}
+                            style={{ height: `${link.bannerHeight || 185}px` }}
+                          >
+                            {link.mediaType === "video" && link.videoUrl ? (
+                              <video
+                                src={link.videoUrl}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                            ) : link.bgImageUrl ? (
+                              <img
+                                src={link.bgImageUrl}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 flex items-center justify-center text-slate-600 text-xs">
+                                Belum ada media (Upload video MP4 atau gambar poster)
+                              </div>
+                            )}
+
+                            {/* Overlay */}
+                            <div
+                              className="absolute inset-0 p-4 flex flex-col justify-end text-left pointer-events-none"
+                              style={{
+                                background: `linear-gradient(to top, rgba(2, 6, 23, ${(link.overlayDarkness ?? 60) / 100}) 0%, transparent 100%)`,
+                              }}
+                            >
+                              {link.badgeText && (
+                                <div className="mb-1.5">
+                                  <span
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border border-cyan-400/30"
+                                    style={{
+                                      backgroundColor: link.badgeBgColor || "rgba(6, 182, 212, 0.25)",
+                                      color: link.badgeTextColor || "#22D3EE",
+                                    }}
+                                  >
+                                    {link.badgeText}
+                                  </span>
+                                </div>
+                              )}
+                              <h4 className="font-bold text-white text-base leading-snug drop-shadow">
+                                {link.title || "Judul Banner Promo"}
+                              </h4>
+                              {link.subtitle && (
+                                <p className="text-xs text-slate-300 drop-shadow line-clamp-1">
+                                  {link.subtitle}
+                                </p>
+                              )}
+                              <div
+                                className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold"
+                                style={{ color: link.btnTextColor || "#22D3EE" }}
+                              >
+                                <span>{link.btnText || "Kunjungi"}</span>
+                                <ArrowRight className="w-3 h-3" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Kustomisasi Khusus Link Biasa */
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">
+                              Sub-Judul / Kategori <span className="text-slate-500 font-normal">(opsional)</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={link.sectionTitle || ""}
+                              onChange={(e) => updateLink(idx, "sectionTitle", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 placeholder-slate-600 font-medium"
+                              placeholder="Misal: Top Up, Social Media, dll"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] text-slate-400 mb-1">URL Tujuan</label>
+                            <input
+                              type="text"
+                              value={link.url}
+                              onChange={(e) => updateLink(idx, "url", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500"
+                              placeholder="https://..."
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] text-slate-400 mb-1">Ikon</label>
+                            <select
+                              value={link.icon}
+                              onChange={(e) => {
+                                const newIcon = e.target.value;
+                                updateLink(idx, "icon", newIcon);
+                                if (newIcon === "custom" && !link.iconWidth) {
+                                  updateLink(idx, "iconWidth", link.layout === "column" ? 80 : 48);
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 font-medium"
+                            >
+                              {AVAILABLE_ICONS.map((ic) => (
+                                <option key={ic.id} value={ic.id}>
+                                  {ic.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
 
                     {/* Custom Icon Upload & URL (Jika pilih icon kustom atau ada customIconUrl) */}
                     {(link.icon === "custom" || Boolean(link.customIconUrl)) && (
@@ -2931,35 +3916,44 @@ export default function EditLinktreePage() {
                                 className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-violet-500 placeholder-slate-600 font-mono"
                                 placeholder="Masukkan URL gambar icon (https://...)"
                               />
-                              <label
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
-                                  uploadingField === `link-icon-${idx}`
-                                    ? "bg-violet-800 text-violet-200 cursor-not-allowed"
-                                    : "bg-violet-600 hover:bg-violet-500 text-white"
-                                }`}
-                              >
-                                {uploadingField === `link-icon-${idx}` ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Upload...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Upload className="w-3.5 h-3.5" />
-                                    <span>Upload Icon</span>
-                                  </>
-                                )}
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  disabled={uploadingField === `link-icon-${idx}`}
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleLinkIconUpload(file, idx);
-                                  }}
-                                />
-                              </label>
+                                <button
+                                  type="button"
+                                  onClick={() => openMediaPicker(idx, "customIconUrl", "image", "link")}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-violet-300 border border-violet-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                  title="Pilih ikon yang sudah ada di Bucket Storage"
+                                >
+                                  <Folder className="w-3.5 h-3.5 text-violet-400" />
+                                  <span>Pilih Dari Bucket</span>
+                                </button>
+                                <label
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
+                                    uploadingField === `link-icon-${idx}`
+                                      ? "bg-violet-800 text-violet-200 cursor-not-allowed"
+                                      : "bg-violet-600 hover:bg-violet-500 text-white"
+                                  }`}
+                                >
+                                  {uploadingField === `link-icon-${idx}` ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Upload...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-3.5 h-3.5" />
+                                      <span>Upload Icon</span>
+                                    </>
+                                  )}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    disabled={uploadingField === `link-icon-${idx}`}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleLinkIconUpload(file, idx);
+                                    }}
+                                  />
+                                </label>
                               {link.customIconUrl && (
                                 <button
                                   type="button"
@@ -3272,6 +4266,15 @@ export default function EditLinktreePage() {
                                 className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-cyan-500 placeholder-slate-600 font-mono"
                                 placeholder="Paste URL gambar banner (https://...)"
                               />
+                              <button
+                                type="button"
+                                onClick={() => openMediaPicker(idx, "bgImageUrl", "image", "link")}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih background banner dari Bucket Storage"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
                               <label
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
                                   uploadingField === `link-cardbg-${idx}`
@@ -3505,6 +4508,8 @@ export default function EditLinktreePage() {
                         </div>
                       </div>
                     </div>
+                  </>
+                )}
 
                     {/* Optional Custom Colors for this Sub-Judul */}
                     {link.sectionTitle && (
@@ -3583,188 +4588,7 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 4: Banner Cards CRUD Manager */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-3 gap-3">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-amber-400" />
-                    <span>Kelola Kartu Banner Live / Promo ({(profile.banners || []).length})</span>
-                  </h2>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={profile.showLiveBanner ?? true}
-                      onChange={(e) => setProfile({ ...profile, showLiveBanner: e.target.checked })}
-                      className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
-                    />
-                    <span className="text-xs font-semibold text-slate-200">
-                      {(profile.showLiveBanner ?? true) ? "Tampilkan Banner" : "Sembunyikan Banner"}
-                    </span>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={addBanner}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambah Banner</span>
-                  </button>
-                </div>
-              </div>
-
-              {(profile.banners || []).length === 0 ? (
-                <div className="p-6 text-center bg-slate-950/60 border border-dashed border-slate-800 rounded-xl space-y-2">
-                  <p className="text-xs text-slate-400">Belum ada kartu banner. Klik tombol di atas untuk membuat banner baru.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(profile.banners || []).map((banner, idx) => (
-                    <div
-                      key={banner.id || idx}
-                      className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/50">
-                            #{idx + 1}
-                          </span>
-                          <input
-                            type="text"
-                            value={banner.title}
-                            onChange={(e) => updateBanner(idx, "title", e.target.value)}
-                            className="bg-transparent font-bold text-sm text-slate-100 border-b border-transparent focus:border-amber-500 outline-none px-1 py-0.5"
-                            placeholder="Judul Banner"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={banner.isEnabled}
-                              onChange={(e) => updateBanner(idx, "isEnabled", e.target.checked)}
-                              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
-                            />
-                            <span>{banner.isEnabled ? "Aktif" : "Non-aktif"}</span>
-                          </label>
-
-                          <button
-                            type="button"
-                            onClick={() => moveBanner(idx, "up")}
-                            disabled={idx === 0}
-                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-                            title="Geser Ke Atas"
-                          >
-                            <MoveUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveBanner(idx, "down")}
-                            disabled={idx === (profile.banners || []).length - 1}
-                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-                            title="Geser Ke Bawah"
-                          >
-                            <MoveDown className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => removeBanner(idx)}
-                            className="p-1 rounded bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-200 transition-colors"
-                            title="Hapus Banner"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">Sub Judul / Deskripsi</label>
-                          <input
-                            type="text"
-                            value={banner.subtitle}
-                            onChange={(e) => updateBanner(idx, "subtitle", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="Deskripsi promo"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">Text Badge Pill</label>
-                          <input
-                            type="text"
-                            value={banner.badgeText}
-                            onChange={(e) => updateBanner(idx, "badgeText", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="LIVE / QUEUE, PROMO, dll"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">URL Target Klik</label>
-                          <input
-                            type="text"
-                            value={banner.targetUrl}
-                            onChange={(e) => updateBanner(idx, "targetUrl", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="/mabarvip"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">Gambar Background URL</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={banner.imageUrl}
-                            onChange={(e) => updateBanner(idx, "imageUrl", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="https://..."
-                          />
-                          <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors">
-                            {uploadingField === `banner-${idx}` ? (
-                              <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-                            ) : (
-                              <Upload className="w-3.5 h-3.5 text-amber-400" />
-                            )}
-                            <span>Upload</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) handleBannerImageUpload(e.target.files[0], idx);
-                              }}
-                            />
-                          </label>
-                          {banner.imageUrl && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                deleteUploadedFile(banner.imageUrl);
-                                updateBanner(idx, "imageUrl", "");
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                              title="Hapus Gambar Banner dari Bucket Supabase"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                              <span>Hapus</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Right Column: Live Mockup / Summary */}
@@ -3778,7 +4602,7 @@ export default function EditLinktreePage() {
                     alt={profile.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
-                  <h3 className="font-bold text-slate-100">{profile.name || "Microboy"}</h3>
+                  <h3 className="font-bold text-slate-100">{profile.name || "Virtus Official"}</h3>
                   <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
 
                   {/* Mini Preview Social Icons Bar */}
@@ -3830,6 +4654,177 @@ export default function EditLinktreePage() {
           </div>
         </div>
       </main>
+
+      {/* Bucket Media Picker Modal (Pilih Foto / Video yang Sudah Ada di Bucket) */}
+      {showMediaPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 select-none">
+          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl border ${mediaPickerType === 'video' ? 'bg-purple-600/20 border-purple-500/30 text-purple-400' : 'bg-amber-600/20 border-amber-500/30 text-amber-400'}`}>
+                  {mediaPickerType === 'video' ? <Video className="w-5 h-5" /> : <ImageIcon className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">
+                    Pilih {mediaPickerType === 'video' ? 'Video Promo' : 'Foto / Poster'} dari Bucket Storage
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Gunakan file yang sudah pernah diupload untuk menghemat kuota & mencegah duplikasi
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fetchBucketFiles(mediaPickerType)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                  title="Refresh Daftar File"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingBucketFiles ? 'animate-spin text-cyan-400' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Tabs & Counter */}
+            <div className="flex items-center justify-between px-5 py-2.5 bg-slate-950/40 border-b border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaPickerType('image');
+                    fetchBucketFiles('image');
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    mediaPickerType === 'image'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  Gambar ({bucketCounts.image || bucketFiles.filter(f => f.type === 'image').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaPickerType('video');
+                    fetchBucketFiles('video');
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    mediaPickerType === 'video'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  Video ({bucketCounts.video || bucketFiles.filter(f => f.type === 'video').length})
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Total {bucketCounts.total || bucketFiles.length} file di Supabase
+              </span>
+            </div>
+
+            {/* Content List / Grid */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-[300px]">
+              {loadingBucketFiles ? (
+                <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <Loader2 className="w-7 h-7 text-cyan-400 animate-spin" />
+                  <span className="text-xs">Memuat file dari Supabase Storage...</span>
+                </div>
+              ) : bucketFiles.length === 0 ? (
+                <div className="h-64 flex flex-col items-center justify-center gap-2 text-center p-6 border border-dashed border-slate-800 rounded-xl">
+                  <Folder className="w-10 h-10 text-slate-600" />
+                  <p className="text-xs font-semibold text-slate-300">Belum ada file {mediaPickerType === 'video' ? 'video' : 'gambar'} di bucket</p>
+                  <p className="text-[11px] text-slate-500 max-w-xs">
+                    Silakan upload file baru lewat tombol "Upload" pada form.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {bucketFiles.map((file) => (
+                    <div
+                      key={file.name}
+                      onClick={() => selectMediaFromBucket(file.url)}
+                      className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 hover:border-cyan-500/80 transition-all cursor-pointer shadow-md flex flex-col text-left select-none"
+                    >
+                      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden flex items-center justify-center pointer-events-none">
+                        {file.type === 'video' ? (
+                          <>
+                            <video
+                              src={file.url}
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors pointer-events-none">
+                              <div className="w-8 h-8 rounded-full bg-purple-600/90 text-white flex items-center justify-center shadow-lg">
+                                <Play className="w-4 h-4 ml-0.5 fill-current" />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <img
+                            src={file.url}
+                            alt={file.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
+                          />
+                        )}
+
+                        <div className="absolute inset-0 bg-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <span className="px-2.5 py-1 rounded-full bg-cyan-500 text-slate-950 font-bold text-[10px] shadow-lg">
+                            Pilih File Ini
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-2 flex flex-col gap-0.5 bg-slate-950">
+                        <span className="text-[11px] font-semibold text-slate-200 truncate" title={file.name}>
+                          {file.name}
+                        </span>
+                        <div className="flex items-center justify-between text-[9px] text-slate-500">
+                          <span>{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                          <span className="uppercase font-mono text-cyan-400/80 font-bold">{file.type}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectMediaFromBucket(file.url);
+                          }}
+                          className="mt-1.5 w-full py-1 rounded bg-slate-900 hover:bg-cyan-600 hover:text-white text-[10px] font-bold text-slate-300 border border-slate-800 transition-colors text-center cursor-pointer"
+                        >
+                          Pilih Media
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Modal */}
+            <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">
+                Klik pada file atau tombol "Pilih Media" untuk langsung menerapkannya.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(false)}
+                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );

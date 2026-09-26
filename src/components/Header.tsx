@@ -20,8 +20,8 @@ export default function Header({ initialData }: HeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Microboy");
-  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Official Streamer");
+  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
+  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
 
   // Auto-detect live status (auto TikTok detector) & site branding settings
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function Header({ initialData }: HeaderProps = {}) {
             className="flex items-center gap-3 group shrink-0 py-1"
           >
             <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0 border border-slate-800/60 bg-slate-900">
-              <img src="/logo.png" alt="Microboy Logo" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col justify-center">
               <h1 className="text-sm sm:text-base font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-tight">

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Microboy Page",
+  title: "Virtus Official Page",
   description: "Streamer & Content Creator",
 };
 

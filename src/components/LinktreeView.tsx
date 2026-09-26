@@ -52,6 +52,19 @@ export interface LinktreeItem {
   textShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
   iconShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
   showInHeaderIcons?: boolean;
+  itemType?: 'link' | 'video_banner' | string;
+  subtitle?: string;
+  mediaType?: 'image' | 'video' | string;
+  videoUrl?: string;
+  bannerHeight?: number;
+  badgeText?: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  btnText?: string;
+  btnTextColor?: string;
+  overlayDarkness?: number;
+  borderStyle?: 'rounded-xl' | 'rounded-2xl' | 'rounded-3xl' | 'rounded-none' | string;
+  borderColor?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -63,6 +76,19 @@ export interface LinktreeBannerItem {
   badgeText: string;
   targetUrl: string;
   imageUrl: string;
+  mediaType?: 'image' | 'video';
+  videoUrl?: string;
+  height?: number;
+  titleColor?: string;
+  titleSize?: 'sm' | 'base' | 'lg' | 'xl';
+  subtitleColor?: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  btnText?: string;
+  btnTextColor?: string;
+  overlayDarkness?: number;
+  borderStyle?: 'rounded-xl' | 'rounded-2xl' | 'rounded-3xl' | 'rounded-none' | string;
+  borderColor?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -91,6 +117,11 @@ export interface LinktreeProfileData {
   bio: string;
   avatarUrl: string;
   avatarBorderColor?: string;
+  bannerImageUrl?: string;
+  showBannerImage?: boolean;
+  bannerHeight?: number;
+  bannerOpacity?: number;
+  bannerOffsetTop?: number;
   theme: string;
   socialHeaderTitle: string;
   categoryBgColor?: string;
@@ -127,6 +158,7 @@ export interface LinktreeProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  videoAdHideClose?: boolean;
   showSocialHeaderIcons?: boolean;
   socialIconPosition?: string;
   socialIconSize?: string;
@@ -757,18 +789,90 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="flex flex-col items-center text-center space-y-6"
+            className="flex flex-col items-center text-center space-y-4 relative"
           >
-            {/* Top Bar / Actions */}
-            <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2">
-              {profile.topButtons && profile.topButtons.length > 0 ? (
-                profile.topButtons
-                  .filter((btn) => btn.isEnabled)
-                  .map((btn) => {
-                    if (btn.isShareAction || btn.url === '#share') {
-                      return (
+            {/* Profile Header Cover Banner (Gaya Twitter/X & TikTok) */}
+            {profile.showBannerImage && profile.bannerImageUrl ? (
+              <div className="w-full relative select-none">
+                {/* Banner Image Container - Masked directly so it fades to transparent revealing website background */}
+                <div
+                  className="w-full relative rounded-t-3xl overflow-hidden"
+                  style={{
+                    height: `${profile.bannerHeight || 180}px`,
+                    WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 80%, rgba(0,0,0,0) 100%)`,
+                    maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 80%, rgba(0,0,0,0) 100%)`,
+                  }}
+                >
+                  <img
+                    src={profile.bannerImageUrl}
+                    alt="Profile Banner"
+                    className="w-full h-full object-cover object-center"
+                  />
+
+                  {/* Top Bar / Actions (di dalam area banner bagian atas) */}
+                  <div className="absolute top-3 inset-x-3 flex items-center justify-between z-20">
+                    {profile.topButtons && profile.topButtons.length > 0 ? (
+                      profile.topButtons
+                        .filter((btn) => btn.isEnabled)
+                        .map((btn) => {
+                          if (btn.isShareAction || btn.url === '#share') {
+                            return (
+                              <button
+                                key={btn.id}
+                                onClick={() => {
+                                  if (navigator.share) {
+                                    navigator.share({ title: profile.name, url: window.location.href });
+                                  } else {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    alert('Link copied to clipboard!');
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all duration-200 cursor-pointer shadow-lg"
+                                title={btn.title}
+                              >
+                                <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                                <span>{btn.title}</span>
+                              </button>
+                            );
+                          }
+                          const isInternal = btn.url.startsWith('/');
+                          if (isInternal) {
+                            return (
+                              <Link
+                                key={btn.id}
+                                href={btn.url}
+                                prefetch={true}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                              >
+                                <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                                <span>{btn.title}</span>
+                              </Link>
+                            );
+                          }
+                          return (
+                            <a
+                              key={btn.id}
+                              href={btn.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                            >
+                              <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                              <span>{btn.title}</span>
+                            </a>
+                          );
+                        })
+                    ) : (
+                      <>
+                        <Link
+                          href="/mabarvip"
+                          prefetch={true}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-medium backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                        >
+                          <Gamepad2 className="w-4 h-4 text-emerald-400" />
+                          <span>Mabar VIP</span>
+                        </Link>
                         <button
-                          key={btn.id}
                           onClick={() => {
                             if (navigator.share) {
                               navigator.share({ title: profile.name, url: window.location.href });
@@ -777,95 +881,148 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                               alert('Link copied to clipboard!');
                             }
                           }}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200 cursor-pointer"
-                          title={btn.title}
+                          className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                          title="Share Profile"
                         >
-                          <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
-                          <span>{btn.title}</span>
+                          <Share2 className="w-3.5 h-3.5" />
                         </button>
-                      );
-                    }
-                    const isInternal = btn.url.startsWith('/');
-                    if (isInternal) {
-                      return (
-                        <Link
-                          key={btn.id}
-                          href={btn.url}
-                          prefetch={true}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
-                        >
-                          <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
-                          <span>{btn.title}</span>
-                        </Link>
-                      );
-                    }
-                    return (
-                      <a
-                        key={btn.id}
-                        href={btn.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
-                      >
-                        <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
-                        <span>{btn.title}</span>
-                      </a>
-                    );
-                  })
-              ) : (
-                <>
-                  <Link
-                    href="/mabarvip"
-                    prefetch={true}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
-                  >
-                    <Gamepad2 className="w-4 h-4 text-emerald-400" />
-                    <span>Mabar VIP</span>
-                  </Link>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({ title: profile.name, url: window.location.href });
-                        } else {
-                          navigator.clipboard.writeText(window.location.href);
-                          alert('Link copied to clipboard!');
-                        }
-                      }}
-                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
-                      title="Share Profile"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
+                      </>
+                    )}
                   </div>
-                </>
-              )}
-            </motion.div>
+                </div>
 
-            {/* Profile Avatar */}
-            <motion.div variants={itemVariants} className="relative group">
-              <motion.div
-                whileHover={{ scale: 1.05, rotate: 2 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
-                  profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
-                    ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
-                    : profile.avatarBorderColor
-                    ? profile.avatarBorderColor
-                    : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
-                } shadow-2xl`}
-              >
-                <img
-                  src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
-                  alt={profile.name}
-                  className="w-full h-full object-cover rounded-full bg-slate-800"
-                />
-              </motion.div>
-              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
-                <span className="w-2 h-2 bg-white rounded-full animate-ping" />
-              </span>
-            </motion.div>
+                {/* Profile Avatar Overlapping halfway across bottom of the banner */}
+                <div className="flex justify-center -mt-14 sm:-mt-16 relative z-30">
+                  <motion.div
+                    whileHover={{ scale: 1.05, rotate: 2 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                    className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
+                      profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
+                        ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
+                        : profile.avatarBorderColor
+                        ? profile.avatarBorderColor
+                        : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
+                    } shadow-2xl`}
+                  >
+                    <img
+                      src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
+                      alt={profile.name}
+                      className="w-full h-full object-cover rounded-full bg-slate-800"
+                    />
+                  </motion.div>
+                  <span className="absolute bottom-1 translate-x-10 sm:translate-x-12 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md z-40">
+                    <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Fallback Layout: Tanpa Banner (Standard Layout) */
+              <>
+                <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2">
+                  {profile.topButtons && profile.topButtons.length > 0 ? (
+                    profile.topButtons
+                      .filter((btn) => btn.isEnabled)
+                      .map((btn) => {
+                        if (btn.isShareAction || btn.url === '#share') {
+                          return (
+                            <button
+                              key={btn.id}
+                              onClick={() => {
+                                if (navigator.share) {
+                                  navigator.share({ title: profile.name, url: window.location.href });
+                                } else {
+                                  navigator.clipboard.writeText(window.location.href);
+                                  alert('Link copied to clipboard!');
+                                }
+                              }}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200 cursor-pointer"
+                              title={btn.title}
+                            >
+                              <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                              <span>{btn.title}</span>
+                            </button>
+                          );
+                        }
+                        const isInternal = btn.url.startsWith('/');
+                        if (isInternal) {
+                          return (
+                            <Link
+                              key={btn.id}
+                              href={btn.url}
+                              prefetch={true}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
+                            >
+                              <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                              <span>{btn.title}</span>
+                            </Link>
+                          );
+                        }
+                        return (
+                          <a
+                            key={btn.id}
+                            href={btn.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
+                          >
+                            <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                            <span>{btn.title}</span>
+                          </a>
+                        );
+                      })
+                  ) : (
+                    <>
+                      <Link
+                        href="/mabarvip"
+                        prefetch={true}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
+                      >
+                        <Gamepad2 className="w-4 h-4 text-emerald-400" />
+                        <span>Mabar VIP</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (navigator.share) {
+                            navigator.share({ title: profile.name, url: window.location.href });
+                          } else {
+                            navigator.clipboard.writeText(window.location.href);
+                            alert('Link copied to clipboard!');
+                          }
+                        }}
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
+                        title="Share Profile"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </motion.div>
+
+                {/* Profile Avatar */}
+                <motion.div variants={itemVariants} className="relative group">
+                  <motion.div
+                    whileHover={{ scale: 1.05, rotate: 2 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                    className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
+                      profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
+                        ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
+                        : profile.avatarBorderColor
+                        ? profile.avatarBorderColor
+                        : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
+                    } shadow-2xl`}
+                  >
+                    <img
+                      src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
+                      alt={profile.name}
+                      className="w-full h-full object-cover rounded-full bg-slate-800"
+                    />
+                  </motion.div>
+                  <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
+                    <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+                  </span>
+                </motion.div>
+              </>
+            )}
 
             {/* Title & Bio */}
             <motion.div variants={itemVariants} className="space-y-2 px-4 w-full">
@@ -1110,7 +1267,118 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                       </motion.div>
                     )}
 
-                    {link.layout === 'column' ? (
+                    {link.itemType === 'video_banner' ? (() => {
+                      const isInternal = link.url?.startsWith('/');
+                      const bannerHeight = link.bannerHeight || 185;
+                      const overlayOpacity = ((link.overlayDarkness ?? 60) / 100).toFixed(2);
+                      const roundedClass = link.borderStyle || 'rounded-3xl';
+                      const borderColorStyle = link.borderColor || 'rgba(255, 255, 255, 0.2)';
+                      const mediaSrc = link.mediaType === 'video' ? link.videoUrl : (link.bgImageUrl || link.customIconUrl);
+
+                      const bannerCardContent = (
+                        <div
+                          className={`relative w-full overflow-hidden group shadow-2xl bg-slate-900 border ${roundedClass} transition-all duration-300`}
+                          style={{
+                            height: `${bannerHeight}px`,
+                            borderColor: borderColorStyle,
+                            opacity: cardOpacity,
+                          }}
+                        >
+                          {/* Media: Video Promo vs Gambar Banner */}
+                          {link.mediaType === 'video' && link.videoUrl ? (
+                            <video
+                              src={link.videoUrl}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                          ) : mediaSrc ? (
+                            <img
+                              src={mediaSrc}
+                              alt={link.title || 'Banner Promo'}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950" />
+                          )}
+
+                          {/* Gradient Overlay for Text Readability */}
+                          <div
+                            className="absolute inset-0 p-5 flex flex-col justify-end text-left pointer-events-none"
+                            style={{
+                              background: `linear-gradient(to top, rgba(2, 6, 23, ${overlayOpacity}) 0%, rgba(2, 6, 23, ${Math.max(0, parseFloat(overlayOpacity) - 0.25)}) 50%, transparent 100%)`,
+                            }}
+                          >
+                            {/* Badge Pill */}
+                            {link.badgeText && (
+                              <div className="mb-2">
+                                <span
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border border-cyan-400/30 backdrop-blur-md shadow-sm"
+                                  style={{
+                                    backgroundColor: link.badgeBgColor || 'rgba(6, 182, 212, 0.25)',
+                                    color: link.badgeTextColor || '#22D3EE',
+                                  }}
+                                >
+                                  {link.badgeText}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Title */}
+                            <h3
+                              className="font-bold leading-snug drop-shadow-md text-lg text-white"
+                              style={{ filter: textShadowCss }}
+                            >
+                              {link.title}
+                            </h3>
+
+                            {/* Subtitle / Description */}
+                            {link.subtitle && (
+                              <p className="text-xs mt-0.5 line-clamp-2 text-slate-300 drop-shadow-sm">
+                                {link.subtitle}
+                              </p>
+                            )}
+
+                            {/* Action Button */}
+                            <div
+                              className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold group-hover:translate-x-0.5 transition-transform"
+                              style={{ color: link.btnTextColor || '#22D3EE' }}
+                            >
+                              <span>{link.btnText || 'Kunjungi'}</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+
+                      return (
+                        <motion.div
+                          variants={itemVariants}
+                          animate={linkAnimateProps}
+                          transition={linkTransitionProps}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full"
+                        >
+                          {isInternal ? (
+                            <Link href={targetUrl} prefetch={true} className="block w-full">
+                              {bannerCardContent}
+                            </Link>
+                          ) : (
+                            <a
+                              href={targetUrl}
+                              target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+                              rel="noopener noreferrer"
+                              className="block w-full"
+                            >
+                              {bannerCardContent}
+                            </a>
+                          )}
+                        </motion.div>
+                      );
+                    })() : link.layout === 'column' ? (
                       <motion.a
                         href={targetUrl}
                         target={targetUrl.startsWith('http') ? '_blank' : '_self'}
@@ -1234,89 +1502,14 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               })}
             </motion.div>
 
-            {/* Live / Custom Banner Cards (Multiple Support) */}
-            {profile.showLiveBanner !== false && (() => {
-              const activeBanners = (profile.banners || []).filter((banner) => banner.isEnabled !== false);
-              if (activeBanners.length === 0) return null;
-              return activeBanners.map((banner) => {
-                const isInternal = banner.targetUrl?.startsWith('/');
-                return (
-                  <motion.div
-                    key={banner.id}
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full pt-2"
-                  >
-                    {isInternal ? (
-                      <Link
-                        href={banner.targetUrl || '/mabarvip'}
-                        prefetch={true}
-                        className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
-                      >
-                        {banner.imageUrl && (
-                          <img
-                            src={banner.imageUrl}
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                          <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                            {banner.title}
-                          </h3>
-                          {banner.subtitle && (
-                            <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                              {banner.subtitle}
-                            </p>
-                          )}
-                          <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                            <span>Kunjungi</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </div>
-                      </Link>
-                    ) : (
-                      <a
-                        href={banner.targetUrl || '/mabarvip'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
-                      >
-                        {banner.imageUrl && (
-                          <img
-                            src={banner.imageUrl}
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                          <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                            {banner.title}
-                          </h3>
-                          {banner.subtitle && (
-                            <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                              {banner.subtitle}
-                            </p>
-                          )}
-                          <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                            <span>Kunjungi</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </div>
-                      </a>
-                    )}
-                  </motion.div>
-                );
-              });
-            })()}
+
 
             {/* Branding badge */}
             <motion.div variants={itemVariants} className="pt-2 text-center text-xs opacity-60 text-white">
               <p className="flex items-center justify-center gap-1 font-medium">
                 <span>Powered by</span>
                 <Link href="/mabarvip" prefetch={true} className="underline hover:text-cyan-300 transition-colors">
-                  Microboy
+                  Virtus Official
                 </Link>
               </p>
             </motion.div>
@@ -1348,6 +1541,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           offsetX={profile.videoAdOffsetX}
           offsetY={profile.videoAdOffsetY}
           zIndex={profile.videoAdZIndex}
+          hideCloseButton={profile.videoAdHideClose}
         />
       )}
     </div>
