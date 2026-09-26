@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users, Cat } from "lucide-react";
+import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users } from "lucide-react";
 
 interface HeaderProps {
   initialData?: {
@@ -81,11 +81,6 @@ export default function Header({ initialData }: HeaderProps = {}) {
       icon: Users,
       badge: isLive ? "SEDANG LIVE" : "BELUM LIVE",
       isLive,
-    },
-    {
-      href: "/fanbase-cupidut-dudud",
-      label: "Cupidut & Dudud",
-      icon: Cat,
     },
   ];
 
