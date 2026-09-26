@@ -98,11 +98,6 @@ export default function Footer({ initialData }: FooterProps = {}) {
                   <span>Mabar VIP</span>
                 </Link>
               </li>
-              <li>
-                <Link href="/fanbase-cupidut-dudud" prefetch={true} className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Fanbase Cupidut & Dudud</span>
-                </Link>
-              </li>
             </ul>
           </div>
 
