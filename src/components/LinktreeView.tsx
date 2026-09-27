@@ -807,7 +807,10 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                   <img
                     src={profile.bannerImageUrl}
                     alt="Profile Banner"
-                    className="w-full h-full object-cover object-center"
+                    className="w-full h-full object-cover"
+                    style={{
+                      objectPosition: `${(profile as any).bannerObjectX ?? 50}% ${(profile as any).bannerObjectY ?? 50}%`
+                    }}
                   />
 
                   {/* Top Bar / Actions (di dalam area banner bagian atas) */}

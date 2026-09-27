@@ -156,6 +156,9 @@ interface ProfileData {
   bannerHeight?: number;
   bannerOpacity?: number;
   bannerOffsetTop?: number;
+  bannerObjectX?: number;
+  bannerObjectY?: number;
+  tiktokLiveUrl?: string;
   theme: string;
   socialHeaderTitle: string;
   categoryBgColor?: string;
@@ -277,6 +280,9 @@ export default function EditLinktreePage() {
     bannerHeight: 260,
     bannerOpacity: 50,
     bannerOffsetTop: 0,
+    bannerObjectX: 50,
+    bannerObjectY: 50,
+    tiktokLiveUrl: "https://www.tiktok.com/@onlyvirtus/live",
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     categoryBgColor: "",
@@ -2226,7 +2232,7 @@ export default function EditLinktreePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Slider Tinggi Banner */}
                       <div>
                         <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
@@ -2280,6 +2286,63 @@ export default function EditLinktreePage() {
                         />
                         <p className="text-[10px] text-slate-500 mt-1">0px = mulai dari paling atas di belakang tombol Mabar VIP.</p>
                       </div>
+
+                      {/* Slider Geser Banner Horisontal & Vertikal (Fokus Gambar) */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Fokus Gambar (Geser X & Y)</span>
+                          <span className="text-indigo-400 font-mono">
+                            {(profile as any).bannerObjectX ?? 50}% {(profile as any).bannerObjectY ?? 50}%
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-slate-400 font-bold w-3">X</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={(profile as any).bannerObjectX ?? 50}
+                              onChange={(e) => setProfile({ ...profile, bannerObjectX: parseInt(e.target.value) || 50 } as any)}
+                              className="w-full accent-indigo-500"
+                              title="Geser posisi Kiri / Kanan"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-slate-400 font-bold w-3">Y</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={(profile as any).bannerObjectY ?? 50}
+                              onChange={(e) => setProfile({ ...profile, bannerObjectY: parseInt(e.target.value) || 50 } as any)}
+                              className="w-full accent-indigo-500"
+                              title="Geser posisi Atas / Bawah"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1">Geser fokus gambar agar tidak terpotong bagian pentingnya.</p>
+                      </div>
+                    </div>
+
+                    {/* Input TikTok Live Streaming Channel URL */}
+                    <div className="pt-3 border-t border-slate-800/80">
+                      <label className="block text-xs font-semibold text-slate-200 mb-1 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                        <span>URL TikTok Live Streaming Channel</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={(profile as any).tiktokLiveUrl || ""}
+                        onChange={(e) => setProfile({ ...profile, tiktokLiveUrl: e.target.value } as any)}
+                        className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-slate-100 outline-none focus:border-indigo-500"
+                        placeholder="https://www.tiktok.com/@onlyvirtus/live"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        URL channel TikTok Live streamer. Memudahkan gonta-ganti link live stream secara instan.
+                      </p>
                     </div>
 
                     {/* Preview Mini Banner Profil */}
@@ -2290,7 +2353,7 @@ export default function EditLinktreePage() {
                             Preview Gradasi Transparan ({profile.bannerOpacity ?? 50}% Transparan):
                           </span>
                           <span className="text-[10px] text-indigo-400 font-mono">
-                            Tinggi: {profile.bannerHeight || 260}px | Offset: {profile.bannerOffsetTop ?? 0}px
+                            Fokus: {(profile as any).bannerObjectX ?? 50}% {(profile as any).bannerObjectY ?? 50}% | Tinggi: {profile.bannerHeight || 260}px
                           </span>
                         </div>
                         <div
@@ -2305,6 +2368,9 @@ export default function EditLinktreePage() {
                             src={profile.bannerImageUrl}
                             alt="Banner Preview"
                             className="w-full h-full object-cover"
+                            style={{
+                              objectPosition: `${(profile as any).bannerObjectX ?? 50}% ${(profile as any).bannerObjectY ?? 50}%`
+                            }}
                           />
                         </div>
                       </div>
