@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xkslvfdguwvrhxetbmyw.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhrc2x2ZmRndXd2cmh4ZXRibXl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjUwODQ0NCwiZXhwIjoyMTAyMDg0NDQ0fQ.qbrIXts6YYgMQ7hQ90-TOCORsY9d7-gOZQQd6fm1tW8';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fxvalblrnbwosabyjnxe.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4dmFsYmxybmJ3b3NhYnlqbnhlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDE2NTExMiwiZXhwIjoyMTA1NzQxMTEyfQ.vjPIRrcRONabBff6jRvSlS6rbFKKWvfaAG1i5Gg1l4M';
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
