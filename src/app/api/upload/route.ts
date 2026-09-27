@@ -57,12 +57,26 @@ export async function POST(request: Request) {
     const contentType = file.type || 'image/jpeg';
 
     // Upload file directly to Supabase Storage bucket 'assets'
-    const { data, error } = await supabase.storage
+    let { data, error } = await supabase.storage
       .from('assets')
       .upload(filename, buffer, {
         contentType,
         upsert: true,
       });
+
+    // Auto-create bucket if missing
+    if (error && (error.message?.includes('Bucket not found') || (error as any).statusCode === '404')) {
+      console.log('Bucket assets not found. Creating bucket...');
+      await supabase.storage.createBucket('assets', { public: true });
+      const retry = await supabase.storage
+        .from('assets')
+        .upload(filename, buffer, {
+          contentType,
+          upsert: true,
+        });
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('Supabase storage upload error:', error);
