@@ -77,7 +77,7 @@ export async function checkTikTokLive(username: string): Promise<{ isLive: boole
       return {
         isLive,
         liveUrl,
-        streamTitle: isLive ? "Virtus Official TikTok Live" : undefined,
+        streamTitle: isLive ? "Microboy TikTok Live" : undefined,
       };
     }
 
@@ -99,7 +99,7 @@ export async function checkTikTokLive(username: string): Promise<{ isLive: boole
       return {
         isLive: hasLiveBadge,
         liveUrl,
-        streamTitle: hasLiveBadge ? "Virtus Official TikTok Live" : undefined,
+        streamTitle: hasLiveBadge ? "Microboy TikTok Live" : undefined,
       };
     }
 

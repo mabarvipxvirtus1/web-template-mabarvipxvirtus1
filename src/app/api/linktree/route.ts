@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 
 const isUUID = (str: any) =>
@@ -59,8 +60,8 @@ export async function GET() {
       profile = await prisma.linktreeProfile.create({
         data: {
           id: 'profile',
-          name: 'Virtus Official',
-          bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
+          name: 'Microboy',
+          bio: 'Streamer & Gaming Content Creator 🔥',
           avatarUrl: '/logo.png',
           avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
           theme: 'ocean',
@@ -70,9 +71,9 @@ export async function GET() {
           liveBannerSub: 'Daftar antrean live mabar eksklusif',
           liveBannerUrl: '/mabarvip',
           liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-          siteTitle: 'Virtus Official',
-          siteSubtitle: 'Streamer TIDAK KIKIR',
-          footerDesc: 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+          siteTitle: 'Microboy',
+          siteSubtitle: 'Official Streamer',
+          footerDesc: 'Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
           links: { create: DEFAULT_LINKS },
           banners: { create: DEFAULT_BANNERS },
           topButtons: { create: DEFAULT_TOP_BUTTONS },
@@ -284,11 +285,11 @@ export async function PUT(request: Request) {
         liveBannerSub: liveBannerSub || '',
         liveBannerUrl: liveBannerUrl || '/mabarvip',
         liveBannerImage: liveBannerImage || '',
-        siteTitle: siteTitle || 'Virtus Official',
-        siteSubtitle: siteSubtitle || 'Streamer TIDAK KIKIR',
+        siteTitle: siteTitle || 'Microboy',
+        siteSubtitle: siteSubtitle || 'Official Streamer',
         siteLogoUrl: siteLogoUrl || '',
         faviconUrl: faviconUrl || '',
-        footerDesc: footerDesc || 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+        footerDesc: footerDesc || 'Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
         showLeaderboard: showLeaderboard ?? true,
         leaderboardTitle: leaderboardTitle || 'TOP SUPPORTERS BULAN INI',
         sociabuzzTribeId: sociabuzzTribeId || '8913094574',
@@ -494,6 +495,13 @@ export async function PUT(request: Request) {
         videoAds: { orderBy: { orderIndex: 'asc' } },
       },
     });
+
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/');
+    } catch (e) {
+      // Revalidation error should not break the response
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

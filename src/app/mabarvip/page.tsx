@@ -154,7 +154,7 @@ export default function MabarVipPage() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 opacity-40 blur-xl animate-pulse" />
             <div className="relative h-24 w-24 rounded-2xl bg-slate-900 border border-violet-500/40 p-2 flex items-center justify-center shadow-2xl overflow-hidden">
-              <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover rounded-xl" />
+              <img src="/logo.png" alt="Microboy Logo" className="w-full h-full object-cover rounded-xl" />
             </div>
             <div className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-violet-600 border-2 border-slate-950 flex items-center justify-center shadow-md">
               <RotateCw className="h-4 w-4 text-white animate-spin" />
@@ -166,7 +166,7 @@ export default function MabarVipPage() {
               Memuat Data Mabar VIP
             </h2>
             <p className="text-xs text-slate-400">
-              Menghubungkan ke antrean real-time Virtus Official...
+              Menghubungkan ke antrean real-time Microboy...
             </p>
           </div>
 

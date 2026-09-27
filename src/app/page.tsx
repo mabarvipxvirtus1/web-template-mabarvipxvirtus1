@@ -25,8 +25,8 @@ export default async function HomePage() {
     // Return fallback profile until initialized via GET route or admin
     profile = {
       id: 'profile',
-      name: 'Virtus Official',
-      bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
+      name: 'Microboy',
+      bio: 'Streamer & Gaming Content Creator 🔥',
       avatarUrl: '/logo.png',
       avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
       theme: 'ocean',
@@ -38,9 +38,9 @@ export default async function HomePage() {
       liveBannerSub: 'Daftar antrean live mabar eksklusif',
       liveBannerUrl: '/mabarvip',
       liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-      siteTitle: 'Virtus Official',
-      siteSubtitle: 'Streamer TIDAK KIKIR',
-      footerDesc: 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
+      siteTitle: 'Microboy',
+      siteSubtitle: 'Official Streamer',
+      footerDesc: 'Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
       updatedAt: new Date(),
       links: [
         { id: '1', title: 'Tiktok', url: 'https://tiktok.com/@onlyvirtus', icon: 'tiktok', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'social', sectionTitle: '', sectionBgColor: '', sectionTextColor: '', waCustomMessage: '', isEnabled: true, orderIndex: 0, profileId: 'profile', createdAt: new Date(), updatedAt: new Date() },

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, Heart, ArrowUpRight } from "lucide-react";
 
+import { getCachedBranding, setCachedBranding, subscribeBrandingUpdate } from "@/lib/brandingCache";
+
 interface SocialLink {
   id: string;
   title: string;
@@ -18,22 +20,57 @@ interface FooterProps {
     siteTitle?: string;
     siteSubtitle?: string;
     footerDesc?: string;
+    siteLogoUrl?: string;
     links?: SocialLink[];
   };
 }
 
 export default function Footer({ initialData }: FooterProps = {}) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialData?.links || []);
-  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
-  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
-  const [footerDesc, setFooterDesc] = useState(
-    initialData?.footerDesc ||
-    "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami."
+  const [siteTitle, setSiteTitle] = useState(() => {
+    if (initialData?.siteTitle) return initialData.siteTitle;
+    const cached = getCachedBranding();
+    return cached?.siteTitle || "";
+  });
+  const [siteSubtitle, setSiteSubtitle] = useState(() => {
+    if (initialData?.siteSubtitle) return initialData.siteSubtitle;
+    const cached = getCachedBranding();
+    return cached?.siteSubtitle || "";
+  });
+  const [footerDesc, setFooterDesc] = useState(() => {
+    if (initialData?.footerDesc !== undefined) return initialData.footerDesc;
+    const cached = getCachedBranding();
+    return cached?.footerDesc || "";
+  });
+
+  const [isBrandingReady, setIsBrandingReady] = useState(
+    () => !!initialData?.siteTitle || !!getCachedBranding()?.siteTitle
   );
 
-  const [isLoaded, setIsLoaded] = useState(!!initialData);
+  const [siteLogoUrl, setSiteLogoUrl] = useState(() => {
+    if (initialData?.siteLogoUrl) return initialData.siteLogoUrl;
+    const cached = getCachedBranding();
+    return cached?.siteLogoUrl || "/logo.png";
+  });
 
   useEffect(() => {
+    const cached = getCachedBranding();
+    if (cached) {
+      if (cached.siteTitle && !initialData?.siteTitle) setSiteTitle(cached.siteTitle);
+      if (cached.siteSubtitle && !initialData?.siteSubtitle) setSiteSubtitle(cached.siteSubtitle);
+      if (cached.footerDesc !== undefined && initialData?.footerDesc === undefined) setFooterDesc(cached.footerDesc);
+      if (cached.siteLogoUrl) setSiteLogoUrl(cached.siteLogoUrl);
+      setIsBrandingReady(true);
+    }
+
+    const unsubscribe = subscribeBrandingUpdate((branding) => {
+      if (branding.siteTitle) setSiteTitle(branding.siteTitle);
+      if (branding.siteSubtitle) setSiteSubtitle(branding.siteSubtitle);
+      if (branding.footerDesc !== undefined) setFooterDesc(branding.footerDesc);
+      if (branding.siteLogoUrl) setSiteLogoUrl(branding.siteLogoUrl);
+      setIsBrandingReady(true);
+    });
+
     const fetchData = async () => {
       try {
         const res = await fetch("/api/linktree", { cache: "no-store" });
@@ -46,16 +83,26 @@ export default function Footer({ initialData }: FooterProps = {}) {
           if (data.siteTitle) setSiteTitle(data.siteTitle);
           if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
           if (data.footerDesc !== undefined) setFooterDesc(data.footerDesc || "");
+          if (data.siteLogoUrl) setSiteLogoUrl(data.siteLogoUrl);
+          setIsBrandingReady(true);
+          setCachedBranding({
+            siteTitle: data.siteTitle,
+            siteSubtitle: data.siteSubtitle,
+            footerDesc: data.footerDesc,
+            siteLogoUrl: data.siteLogoUrl,
+            faviconUrl: data.faviconUrl,
+          });
         }
       } catch (err) {
         console.error("Failed to fetch footer data:", err);
-      } finally {
-        setIsLoaded(true);
       }
     };
 
     fetchData();
-  }, []);
+    return () => {
+      unsubscribe();
+    };
+  }, [initialData]);
 
   const linksToRender = socialLinks;
 
@@ -70,16 +117,23 @@ export default function Footer({ initialData }: FooterProps = {}) {
           <div className="md:col-span-2 space-y-4">
             <Link href="/" prefetch={true} className="flex items-center gap-3 group">
               <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-                <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
+                <img
+                  src={siteLogoUrl || "/logo.png"}
+                  alt={siteTitle || "Logo"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                  }}
+                />
               </div>
-              <div>
-                <h3 className="text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent">
+              <div className={`transition-opacity duration-200 ${isBrandingReady ? "opacity-100" : "opacity-0"}`}>
+                <h3 className="text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent min-h-[1.75rem]">
                   {siteTitle}
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">{siteSubtitle}</p>
+                <p className="text-xs text-slate-500 font-medium min-h-[1rem]">{siteSubtitle}</p>
               </div>
             </Link>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-md whitespace-pre-line">
+            <p className={`text-sm text-slate-400 leading-relaxed max-w-md whitespace-pre-line transition-opacity duration-200 ${isBrandingReady ? "opacity-100" : "opacity-0"}`}>
               {footerDesc}
             </p>
           </div>
@@ -140,11 +194,11 @@ export default function Footer({ initialData }: FooterProps = {}) {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Virtus Official. Hak cipta dilindungi.</p>
+          <p>&copy; {new Date().getFullYear()} Microboy. Hak cipta dilindungi.</p>
           <div className="flex items-center gap-1">
             <span>Dibuat dengan</span>
             <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" />
-            <span>untuk Komunitas Virtus</span>
+            <span>untuk Komunitas Microboy</span>
           </div>
         </div>
       </div>

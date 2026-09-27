@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import { ChromaVideoAd } from "@/components/ChromaVideoAd";
+import { setCachedBranding } from "@/lib/brandingCache";
 import {
   ArrowLeft,
   ArrowRight,
@@ -167,6 +168,7 @@ interface ProfileData {
   siteTitle?: string;
   siteSubtitle?: string;
   siteLogoUrl?: string;
+  faviconUrl?: string;
   footerDesc?: string;
   showLeaderboard?: boolean;
   leaderboardTitle?: string;
@@ -266,8 +268,8 @@ export default function EditLinktreePage() {
 
   const [profile, setProfile] = useState<ProfileData>({
     id: "profile",
-    name: "Virtus Official",
-    bio: "Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥",
+    name: "Microboy",
+    bio: "Streamer & Gaming Content Creator 🔥",
     avatarUrl: "/logo.png",
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     bannerImageUrl: "",
@@ -284,10 +286,11 @@ export default function EditLinktreePage() {
     liveBannerSub: "Daftar antrean live mabar eksklusif",
     liveBannerUrl: "/mabarvip",
     liveBannerImage: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
-    siteTitle: "Virtus Official",
-    siteSubtitle: "Streamer TIDAK KIKIR",
+    siteTitle: "Microboy",
+    siteSubtitle: "Official Streamer",
     siteLogoUrl: "",
-    footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
+    faviconUrl: "",
+    footerDesc: "Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
     showLeaderboard: true,
     leaderboardTitle: "TOP SUPPORTERS BULAN INI",
     sociabuzzTribeId: "8913094574",
@@ -359,9 +362,9 @@ export default function EditLinktreePage() {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [mediaPickerType, setMediaPickerType] = useState<"image" | "video">("image");
   const [mediaPickerTarget, setMediaPickerTarget] = useState<{
-    targetType: "link" | "banner";
-    index: number;
-    field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl";
+    targetType: "link" | "banner" | "profile" | "videoAd";
+    index?: number;
+    field: string;
   } | null>(null);
   const [bucketFiles, setBucketFiles] = useState<Array<{ name: string; url: string; size: number; createdAt: string; type: "image" | "video" }>>([]);
   const [bucketCounts, setBucketCounts] = useState<{ total: number; image: number; video: number }>({ total: 0, image: 0, video: 0 });
@@ -388,11 +391,21 @@ export default function EditLinktreePage() {
 
   const openMediaPicker = (
     index: number,
-    field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl",
+    field: string,
     type: "image" | "video",
-    targetType: "link" | "banner" = "banner"
+    targetType: "link" | "banner" | "profile" | "videoAd" = "banner"
   ) => {
     setMediaPickerTarget({ targetType, index, field });
+    setMediaPickerType(type);
+    setShowMediaPicker(true);
+    fetchBucketFiles(type);
+  };
+
+  const openProfileMediaPicker = (
+    field: "siteLogoUrl" | "faviconUrl" | "avatarUrl" | "bannerImageUrl" | "bgImageUrl" | "liveBannerImage" | "videoAdUrl",
+    type: "image" | "video" = "image"
+  ) => {
+    setMediaPickerTarget({ targetType: "profile", field });
     setMediaPickerType(type);
     setShowMediaPicker(true);
     fetchBucketFiles(type);
@@ -421,7 +434,14 @@ export default function EditLinktreePage() {
   const selectMediaFromBucket = (url: string) => {
     if (mediaPickerTarget) {
       const { targetType, index, field } = mediaPickerTarget;
-      if (targetType === "link") {
+      if (targetType === "profile") {
+        setProfile((prev) => ({ ...prev, [field]: url }));
+        if (field === "siteLogoUrl" || field === "faviconUrl") {
+          setCachedBranding({ [field]: url });
+        }
+      } else if (targetType === "videoAd" && typeof index === "number") {
+        updateVideoAd(index, "videoUrl", url);
+      } else if (targetType === "link" && typeof index === "number") {
         if (field === "videoUrl") {
           updateMultipleLinkFields(index, { videoUrl: url, mediaType: "video" });
         } else if (field === "bgImageUrl") {
@@ -431,7 +451,7 @@ export default function EditLinktreePage() {
         } else {
           updateMultipleLinkFields(index, { [field]: url } as any);
         }
-      } else {
+      } else if (targetType === "banner" && typeof index === "number") {
         if (field === "videoUrl") {
           updateMultipleBannerFields(index, { videoUrl: url, mediaType: "video" });
         } else {
@@ -520,10 +540,16 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl" | "bannerImageUrl") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl" | "bannerImageUrl" | "siteLogoUrl" | "faviconUrl") => {
     setUploadingField(field);
     try {
-      const compressedBlob = await compressImage(file, field === "bannerImageUrl" ? 1200 : 800, field === "bannerImageUrl" ? 600 : 800, 0.85);
+      const isSquareIcon = field === "siteLogoUrl" || field === "faviconUrl";
+      const compressedBlob = await compressImage(
+        file,
+        field === "bannerImageUrl" ? 1200 : isSquareIcon ? 400 : 800,
+        field === "bannerImageUrl" ? 600 : isSquareIcon ? 400 : 800,
+        0.85
+      );
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
       if (profile[field]) {
@@ -539,6 +565,9 @@ export default function EditLinktreePage() {
 
       if (res.ok && data.url) {
         setProfile((prev) => ({ ...prev, [field]: data.url }));
+        if (field === "siteLogoUrl" || field === "faviconUrl") {
+          setCachedBranding({ [field]: data.url });
+        }
         setSaveSuccess(false);
       } else {
         alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
@@ -808,6 +837,21 @@ export default function EditLinktreePage() {
         const updated = await res.json();
         setProfile(updated);
         setSaveSuccess(true);
+        if (
+          updated.siteTitle ||
+          updated.siteSubtitle ||
+          updated.footerDesc !== undefined ||
+          updated.siteLogoUrl !== undefined ||
+          updated.faviconUrl !== undefined
+        ) {
+          setCachedBranding({
+            siteTitle: updated.siteTitle,
+            siteSubtitle: updated.siteSubtitle,
+            footerDesc: updated.footerDesc,
+            siteLogoUrl: updated.siteLogoUrl,
+            faviconUrl: updated.faviconUrl,
+          });
+        }
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         const errData = await res.json();
@@ -1386,10 +1430,10 @@ export default function EditLinktreePage() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header & Footer</label>
                   <input
                     type="text"
-                    value={profile.siteTitle || "Virtus Official"}
+                    value={profile.siteTitle || "Microboy"}
                     onChange={(e) => setProfile({ ...profile, siteTitle: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Contoh: Virtus Official"
+                    placeholder="Contoh: Microboy"
                   />
                 </div>
 
@@ -1397,10 +1441,10 @@ export default function EditLinktreePage() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Sub-judul / Tagline Website</label>
                   <input
                     type="text"
-                    value={profile.siteSubtitle || "Streamer TIDAK KIKIR"}
+                    value={profile.siteSubtitle || "Official Streamer"}
                     onChange={(e) => setProfile({ ...profile, siteSubtitle: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Contoh: Streamer TIDAK KIKIR"
+                    placeholder="Contoh: Official Streamer"
                   />
                 </div>
               </div>
@@ -1408,16 +1452,54 @@ export default function EditLinktreePage() {
               {/* Logo Website */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Logo Website <span className="text-slate-500 font-normal">(disimpan statis di /public/logo.png – dimuat instan)</span>
+                  Logo Website Header & Footer
                 </label>
-                <div className="flex items-center gap-3">
-                  {/* Preview logo */}
-                  <div className="h-12 w-12 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
-                    <img src="/logo.png" alt="Logo Statis" className="w-full h-full object-cover" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="h-14 w-14 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                      src={profile.siteLogoUrl || "/logo.png"}
+                      alt="Logo Website"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                      }}
+                    />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-300 font-medium">Logo Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/logo.png</code></p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Logo Header dan Footer sekarang otomatis memuat file statis dari folder public agar instan dan tanpa jeda.</p>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={profile.siteLogoUrl || ""}
+                        onChange={(e) => {
+                          setProfile({ ...profile, siteLogoUrl: e.target.value });
+                          setCachedBranding({ siteLogoUrl: e.target.value });
+                        }}
+                        className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs outline-none text-slate-100"
+                        placeholder="Default: /logo.png (atau paste URL custom)"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openProfileMediaPicker("siteLogoUrl", "image")}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                        title="Pilih logo dari Bucket Supabase"
+                      >
+                        <Folder className="w-3.5 h-3.5 text-violet-400" />
+                        <span>Pilih Dari Bucket</span>
+                      </button>
+                      <label className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                        {uploadingField === "siteLogoUrl" ? "Mengunggah..." : "Upload Logo"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(file, "siteLogoUrl");
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Logo otomatis dicache di browser sehingga langsung tampil instan tanpa jeda saat halaman dibuka.</p>
                   </div>
                 </div>
               </div>
@@ -1436,19 +1518,54 @@ export default function EditLinktreePage() {
               {/* Favicon / Icon Tab Browser */}
               <div className="pt-3 border-t border-slate-800/60">
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Icon Tab Browser (Favicon) <span className="text-slate-500 font-normal">(disimpan statis di /public/favicon.ico)</span>
+                  Icon Tab Browser (Favicon)
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                     <img
-                      src="/favicon.ico"
+                      src={profile.faviconUrl || "/favicon.ico"}
                       alt="Favicon"
-                      className="w-8 h-8 object-contain"
+                      className="w-7 h-7 object-contain"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/favicon.ico";
+                      }}
                     />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-300 font-medium">Favicon Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/favicon.ico</code></p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Favicon otomatis tampil di tab browser untuk semua pengunjung website.</p>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={profile.faviconUrl || ""}
+                        onChange={(e) => {
+                          setProfile({ ...profile, faviconUrl: e.target.value });
+                          setCachedBranding({ faviconUrl: e.target.value });
+                        }}
+                        className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs outline-none text-slate-100"
+                        placeholder="Default: /favicon.ico (atau paste URL custom)"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openProfileMediaPicker("faviconUrl", "image")}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                        title="Pilih favicon dari Bucket Supabase"
+                      >
+                        <Folder className="w-3.5 h-3.5 text-violet-400" />
+                        <span>Pilih Dari Bucket</span>
+                      </button>
+                      <label className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                        {uploadingField === "faviconUrl" ? "Mengunggah..." : "Upload Favicon"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(file, "faviconUrl");
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Favicon otomatis tampil di tab browser untuk semua pengunjung website dan tersinkronisasi instan.</p>
                   </div>
                 </div>
               </div>
@@ -1687,6 +1804,15 @@ export default function EditLinktreePage() {
                                 className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-purple-500 text-xs font-mono text-slate-100"
                                 placeholder="https://domain.com/video-iklan.mp4"
                               />
+                              <button
+                                type="button"
+                                onClick={() => openProfileMediaPicker("videoAdUrl", "video")}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih video dari Bucket Supabase"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
                               <label className="flex items-center justify-center px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1">
                                 {uploadingVideo ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1818,6 +1944,15 @@ export default function EditLinktreePage() {
                                 className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-100 outline-none focus:border-purple-500"
                                 placeholder="https://domain.com/video.mp4"
                               />
+                              <button
+                                type="button"
+                                onClick={() => openMediaPicker(idx, "videoUrl", "video", "videoAd")}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih video dari Bucket Supabase"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
                               <label className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1">
                                 {uploadingField === `videoAd-${idx}` ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1967,6 +2102,15 @@ export default function EditLinktreePage() {
                       className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
                       placeholder="https://..."
                     />
+                    <button
+                      type="button"
+                      onClick={() => openProfileMediaPicker("avatarUrl", "image")}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                      title="Pilih avatar dari Bucket Supabase"
+                    >
+                      <Folder className="w-3.5 h-3.5 text-violet-400" />
+                      <span>Pilih Dari Bucket</span>
+                    </button>
                     <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                       {uploadingField === "avatarUrl" ? (
                         <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
@@ -2039,6 +2183,15 @@ export default function EditLinktreePage() {
                             className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-100 focus:border-indigo-500 font-mono"
                             placeholder="https://images.unsplash.com/..."
                           />
+                          <button
+                            type="button"
+                            onClick={() => openProfileMediaPicker("bannerImageUrl", "image")}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                            title="Pilih banner dari Bucket Supabase"
+                          >
+                            <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Pilih Dari Bucket</span>
+                          </button>
                           <label className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
                             {uploadingField === "bannerImageUrl" ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2462,6 +2615,15 @@ export default function EditLinktreePage() {
                       className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-purple-500 text-sm outline-none text-slate-100 font-mono"
                       placeholder="https://images.unsplash.com/... atau kosongkan untuk warna tema"
                     />
+                    <button
+                      type="button"
+                      onClick={() => openProfileMediaPicker("bgImageUrl", "image")}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                      title="Pilih background dari Bucket Supabase"
+                    >
+                      <Folder className="w-4 h-4 text-purple-400" />
+                      <span>Pilih Dari Bucket</span>
+                    </button>
                     <label className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                       {uploadingField === "bgImageUrl" ? (
                         <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
@@ -2599,7 +2761,7 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Virtus Official) */}
+            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Microboy) */}
             <div id="sec-social-icons" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
@@ -2608,13 +2770,13 @@ export default function EditLinktreePage() {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                      <span>Icon Social Media Header (Bawah Judul Virtus Official)</span>
+                      <span>Icon Social Media Header (Bawah Judul Microboy)</span>
                       <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono border border-cyan-500/30">
                         Linktree Icon Bar
                       </span>
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Virtus Official dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
+                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Microboy dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
                     </p>
                   </div>
                 </div>
@@ -2640,7 +2802,7 @@ export default function EditLinktreePage() {
                     <label className="block text-xs font-bold text-slate-200 mb-2">Posisi Penempatan Icon Bar</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
-                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Virtus Official" },
+                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Microboy" },
                         { id: "above_links", label: "📋 Di Atas Links List", desc: "Di atas daftar link utama" },
                         { id: "disabled", label: "🚫 Sembunyikan Bar", desc: "Nonaktifkan icon bar header" },
                       ].map((pos) => (
@@ -2844,7 +3006,7 @@ export default function EditLinktreePage() {
                       </label>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Virtus Official:
+                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Microboy:
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -4602,7 +4764,7 @@ export default function EditLinktreePage() {
                     alt={profile.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
-                  <h3 className="font-bold text-slate-100">{profile.name || "Virtus Official"}</h3>
+                  <h3 className="font-bold text-slate-100">{profile.name || "Microboy"}</h3>
                   <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
 
                   {/* Mini Preview Social Icons Bar */}
